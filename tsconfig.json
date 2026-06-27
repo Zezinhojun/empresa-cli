@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    /* ===== OUTPUT ===== */
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    /* ===== NODE ESM MODERNO ===== */
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "target": "ES2022",
+
+    /* ===== TYPES ===== */
+    "types": ["node"],
+    "lib": ["ES2022"],
+
+    /* ===== STRICT (ESSENCIAL) ===== */
+    "strict": true,
+
+    "noImplicitAny": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    /* ===== SAFETY DE MODULES ===== */
+    "verbatimModuleSyntax": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+
+    /* ===== OUTPUT QUALITY ===== */
+    "sourceMap": true,
+    "declaration": true,
+    "declarationMap": true,
+
+    /* ===== PERFORMANCE ===== */
+    "skipLibCheck": true
+  },
+
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
+}
