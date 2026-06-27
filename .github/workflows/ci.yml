@@ -1,0 +1,27 @@
+name: CI - VOX CLI
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+jobs:
+  # ─── Stage 1: PR ────────────────────────────────────────────────────────────
+  lint:
+    uses: ./.github/workflows/lint.yml
+
+  test:
+    needs: lint
+    uses: ./.github/workflows/test.yml
+
+  # ─── Stage 2: Merge ─────────────────────────────────────────────────────────
+  build:
+    needs: test
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/build.yml
+
+  publish:
+    needs: build
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/publish.yml
