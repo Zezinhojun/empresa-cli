@@ -1,1 +1,1 @@
-console.log("VOX CLI inicializada");
+console.log('VOX CLI inicializada');
