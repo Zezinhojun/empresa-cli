@@ -1,19 +1,28 @@
 {
   "compilerOptions": {
-    /* ===== OUTPUT ===== */
+
+    /* =========================================================
+     * OUTPUT (build da CLI)
+     * ========================================================= */
     "rootDir": "./src",
     "outDir": "./dist",
 
-    /* ===== NODE ESM MODERNO ===== */
+    /* =========================================================
+     * NODE ESM MODERNO (CLI runtime)
+     * ========================================================= */
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "target": "ES2022",
 
-    /* ===== TYPES ===== */
+    /* =========================================================
+     * TYPES (ambiente Node CLI)
+     * ========================================================= */
     "types": ["node"],
     "lib": ["ES2022"],
 
-    /* ===== STRICT (ESSENCIAL) ===== */
+    /* =========================================================
+     * STRICT MODE (evita bugs em automação)
+     * ========================================================= */
     "strict": true,
 
     "noImplicitAny": true,
@@ -24,20 +33,29 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
 
-    /* ===== SAFETY DE MODULES ===== */
+    /* =========================================================
+     * MODULE SAFETY (CLI architecture importante)
+     * ========================================================= */
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "moduleDetection": "force",
 
-    /* ===== OUTPUT QUALITY ===== */
+    /* =========================================================
+     * OUTPUT QUALITY (debug + distribui CLI)
+     * ========================================================= */
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
 
-    /* ===== PERFORMANCE ===== */
+    /* =========================================================
+     * PERFORMANCE (evita overhead desnecessário)
+     * ========================================================= */
     "skipLibCheck": true
   },
 
+  /* =========================================================
+   * INPUT / OUTPUT CONTROL
+   * ========================================================= */
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
 }
