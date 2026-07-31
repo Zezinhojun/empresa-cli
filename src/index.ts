@@ -1,1 +1,3 @@
-console.log('VOX CLI inicializada');
+import { bootstrap } from './cli/bootstrap.js';
+
+bootstrap();

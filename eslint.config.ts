@@ -5,6 +5,7 @@ import pluginPromise from 'eslint-plugin-promise';
 import pluginSecurity from 'eslint-plugin-security';
 import { defineConfig } from 'eslint/config';
 import globals from 'globals';
+import { createTypeScriptImportResolver } from 'eslint-import-resolver-typescript';
 import * as tseslint from 'typescript-eslint';
 
 export default defineConfig([
@@ -29,6 +30,16 @@ export default defineConfig([
       perfectionist, // Organização de imports e objetos
       promise: pluginPromise, // Garantia de uso correto de async/await
       security: pluginSecurity, // Detecção de padrões inseguros
+    },
+
+    settings: {
+      // <--
+      'import/resolver': {
+        typescript: createTypeScriptImportResolver({
+          alwaysTryTypes: true,
+          project: './tsconfig.json',
+        }),
+      },
     },
 
     rules: {
