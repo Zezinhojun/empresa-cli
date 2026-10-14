@@ -39,6 +39,13 @@ vox --version
 
 Comando inexistente imprime uma dica e sai com código `2`.
 
+## Scripts (`.sh`, `.py`, `.js`)
+
+Cada pasta de [`vox-scripts/`](vox-scripts/README.md) vira um comando: `vox <nome>`. Quem usa não precisa saber
+se o script é Bash, Python ou Node: a `vox` descobre como executar, confere se o computador tem o que é
+preciso (`vox doctor`) e, se o script altera ou apaga coisas, **pergunta antes**. Os scripts viajam dentro do
+pacote npm, então passam por PR e CI como o resto do código. Como criar um: [vox-scripts/README.md](vox-scripts/README.md).
+
 ## Uso por agentes de IA (Claude Code, Codex etc.)
 
 A `vox` foi desenhada para ser chamada também por agentes, como subprocesso:
@@ -56,7 +63,7 @@ Contrato completo em [docs/cli-contract.md](docs/cli-contract.md) e guia rápido
 
 ```bash
 npm ci
-npm run dev -- --help   # roda direto do TypeScript (tsx)
+npm run dev -- --help   # builda (tsup) e roda a CLI com os argumentos
 ```
 
 | Script              | Função                                                                  |

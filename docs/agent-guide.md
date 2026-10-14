@@ -18,9 +18,12 @@ Este é o resumo do que o agente precisa saber. O contrato completo vem logo aba
 5. **Respeite o `risk`:** `read` pode rodar livremente. Para `write` e `destructive`, só execute se o usuário
    pediu aquela ação. Passe `--yes` **apenas** nesse caso: sem ele, um comando que pede confirmação falha
    com código `4` em vez de ficar esperando.
-6. **Ignore `interactive: true`** (ex.: `menu`) e nunca dependa de `vox` sem argumentos: sem terminal
+6. **Scripts são comandos como os outros** (`kind: "script"` no catálogo): descubra com `vox list --json`,
+   confira `requires` e `risk`, e use `vox <nome> --dry-run --json` para ver o que seria executado sem
+   executar. `write`/`destructive` só com `--yes` e se o usuário pediu aquela ação.
+7. **Ignore `interactive: true`** (ex.: `menu`) e nunca dependa de `vox` sem argumentos: sem terminal
    ele só mostra a ajuda.
-7. Argumentos que começam com `-` devem vir depois de `--`: `vox <comando> -- --valor`.
+8. Argumentos que começam com `-` devem vir depois de `--`: `vox <comando> -- --valor`.
 
 ## Exemplos
 

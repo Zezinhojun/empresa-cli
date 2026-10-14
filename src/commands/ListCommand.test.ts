@@ -34,7 +34,9 @@ describe('ListCommand', () => {
       args: [{ description: 'Alvo', name: 'alvo', required: true }],
       description: 'Faz algo',
       interactive: false,
+      kind: 'builtin',
       name: 'zeta',
+      requires: [],
       risk: 'write',
       usage: 'vox zeta <alvo>',
     });

@@ -1,6 +1,3 @@
-import './AgentGuideCommand.js';
-import './DoctorCommand.js';
-import './ListCommand.js';
-import './ListVoxCommand.js';
-import './MenuCommand.js';
-import './TopMemoryCommand.js';
+// Comandos nativos primeiro; depois os scripts (que não podem repetir um nome nativo).
+import './builtins.js';
+import './ScriptCommands.js';

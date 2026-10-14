@@ -25,6 +25,11 @@ export function printResult(command: Command, data: unknown) {
   }
   if (data === undefined) return;
 
-  if (command.format) console.log(command.format(data, runtime));
-  else console.log(typeof data === 'string' ? data : JSON.stringify(data, null, 2));
+  const text = command.format
+    ? command.format(data, runtime)
+    : typeof data === 'string'
+      ? data
+      : JSON.stringify(data, null, 2);
+  // Texto vazio = o comando já escreveu a própria saída (ex.: script em modo humano).
+  if (text !== '') console.log(text);
 }
