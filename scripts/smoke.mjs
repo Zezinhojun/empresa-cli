@@ -210,6 +210,64 @@ try {
     'a execução ficou registrada em ~/.vox/audit.log',
   );
 
+  // --- máquina SEM Bash nem Python: o caminho "falta o interpretador" ---
+  // PATH vazio (a CLI é chamada pelo caminho absoluto do Node) e as pastas onde o Git para Windows
+  // costuma ficar apontando para o vazio: não há Bash nem Python possível de achar. É o computador de
+  // quem nunca instalou nada; o Node, que roda a própria CLI, sempre existe.
+  const vazio = join(work, 'maquina-sem-nada');
+  mkdirSync(vazio);
+  // No Windows, SOBRESCREVER ProgramFiles num processo filho é ignorado (ele segue vendo
+  // C:\Program Files), mas REMOVER funciona: sem essas raízes, não há onde procurar o Git Bash.
+  const RAIZES_DO_GIT = ['PROGRAMFILES', 'PROGRAMFILES(X86)', 'PROGRAMW6432', 'LOCALAPPDATA'];
+  const bareEnv = Object.fromEntries(
+    Object.entries(env)
+      .filter(([k]) => !RAIZES_DO_GIT.includes(k.toUpperCase()))
+      .map(([k, v]) => [k, k.toUpperCase() === 'PATH' ? vazio : v]),
+  );
+  const bare = (...args) =>
+    spawnSync(process.execPath, [entry, ...args], { cwd: work, encoding: 'utf8', env: bareEnv });
+
+  const checks = Object.fromEntries(
+    JSON.parse(bare('doctor', '--json').stdout).data.checks.map((c) => [c.runtime, c]),
+  );
+  assert(
+    checks.node.ok &&
+      !checks.bash.ok &&
+      !checks.python.ok &&
+      checks.bash.install &&
+      checks.python.install,
+    'sem Bash nem Python: vox doctor diz o que falta e como instalar (o Node sempre está)',
+  );
+  assert(
+    JSON.parse(bare('smoke-js', 'a b', 'c', '--json').stdout).data.stdout.trim() ===
+      'js:["a b","c"]',
+    'sem Bash nem Python, os scripts .js continuam funcionando',
+  );
+  for (const [name, label] of [
+    ['smoke-sh', 'Bash'],
+    ['smoke-py', 'Python 3'],
+  ]) {
+    const r = bare(name, 'a', '--json');
+    const { error } = JSON.parse(r.stdout);
+    assert(
+      r.status === 3 &&
+        r.stderr === '' &&
+        error.code === 'MISSING_RUNTIME' &&
+        error.message.includes(`precisa do ${label}`) &&
+        error.hint.includes('vox doctor') &&
+        !/ENOENT|spawn/.test(r.stdout),
+      `${name} sem ${label}: exit 3, MISSING_RUNTIME e instruções de instalação (nunca "ENOENT")`,
+    );
+  }
+  const humano = bare('smoke-py', 'a');
+  assert(
+    humano.status === 3 &&
+      humano.stdout === '' &&
+      humano.stderr.includes('Python 3') &&
+      !/ENOENT|spawn|\bat /.test(humano.stderr),
+    'em modo texto a falta do Python vai para stderr, sem stack nem jargão técnico',
+  );
+
   // adulteração depois da instalação: o script alterado NÃO executa
   const marker = join(work, 'executou-adulterado.txt');
   appendFileSync(
