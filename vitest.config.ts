@@ -21,7 +21,6 @@ export default defineConfig({
         '**/*.config.*',
         '**/setup.ts',
         'src/index.ts',
-        'src/cli/bootstrap.ts',
       ],
       provider: 'v8',
       reporter: ['text', 'json-summary', 'html'],
