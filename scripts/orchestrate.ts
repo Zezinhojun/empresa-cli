@@ -27,6 +27,8 @@ interface Spec {
 
 function runCmd(cmd: string, args: string[], cwd = ROOT): { stdout: string; stderr: string } {
   console.log(`\n$ ${cmd} ${args.join(' ')}`);
+  // shell: true é necessário no Windows (npm.cmd). Seguro aqui: cmd e rgs são sempre
+  // literais fixos deste script, nunca entrada do usuário. Fora do pacote npm (files: [dist]).
   const result = spawnSync(cmd, args, { cwd, encoding: 'utf8', shell: true });
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`Command failed (${result.status}): ${result.stderr}`);
