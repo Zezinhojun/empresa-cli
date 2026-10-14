@@ -1,7 +1,7 @@
 import '../commands/index.js';
 import { CommandRegistry, CommandExecutor } from '../core/command/index.js';
 
-export function bootstrap() {
+export async function bootstrap() {
   const registry = CommandRegistry.getInstance();
   const executor = new CommandExecutor(registry);
 
@@ -14,5 +14,11 @@ export function bootstrap() {
     return;
   }
 
-  executor.execute(cmd, args);
+  await executor.execute(cmd, args);
+
+  const command = registry.get(cmd);
+
+  if (command?.keepAlive) {
+    await executor.execute('menu');
+  }
 }

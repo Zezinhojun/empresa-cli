@@ -3,7 +3,7 @@ import type { CommandRegistry } from './CommandRegistry.js';
 export class CommandExecutor {
   constructor(private readonly registry: CommandRegistry) {}
 
-  async execute(name: string, args: string[] = []) {
+  async execute(name: string, args: string[] = []): Promise<void> {
     const command = this.registry.get(name);
 
     if (!command) {
