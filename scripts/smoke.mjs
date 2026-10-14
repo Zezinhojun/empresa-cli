@@ -64,6 +64,16 @@ try {
     vox('list-vox', '--help').includes('vox list-vox [subpasta]'),
     'vox <cmd> --help mostra o uso',
   );
+
+  // o smoke roda sem terminal (stdin/stdout em pipe), exatamente como um agente chamaria
+  const semArgs = vox();
+  assert(
+    semArgs.includes('Comandos:') &&
+      !semArgs.includes('Selecione um comando') &&
+      !semArgs.includes('\u001B['),
+    'vox sem argumentos e sem terminal mostra a ajuda (não abre menu, sem ANSI)',
+  );
+  assert(exitCode('menu') === 2, 'vox menu sem terminal recusa com código 2');
   console.log('\nSMOKE OK');
 } catch (error) {
   console.error(`\n${error.message}`);

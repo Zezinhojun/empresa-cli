@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 
 import type { Command } from '../core/command/Command.js';
 
+import { resetRuntime, setRuntime } from '../cli/runtime.js';
 import { CommandRegistry } from '../core/command/CommandRegistry.js';
 import { MenuCommand } from './MenuCommand.js';
 
@@ -19,16 +20,28 @@ describe('MenuCommand', () => {
     (CommandRegistry as unknown as { instance?: CommandRegistry | undefined }).instance = undefined;
     registry = CommandRegistry.getInstance();
     menuCmd = new MenuCommand();
+    setRuntime({ interactive: true, json: false, plain: false, verbose: false, yes: false });
     vi.clearAllMocks();
   });
 
   afterEach(() => {
+    resetRuntime();
     vi.restoreAllMocks();
   });
 
   it('tem nome e descrição corretos', () => {
     expect(menuCmd.name).toBe('menu');
     expect(menuCmd.description).toContain('menu interativo');
+  });
+
+  it('sem terminal interativo recusa (exit 2) em vez de abrir prompt', async () => {
+    setRuntime({ interactive: false, json: false, plain: true, verbose: false, yes: false });
+
+    await expect(menuCmd.execute()).rejects.toMatchObject({
+      code: 'INTERACTIVE_REQUIRED',
+      exitCode: 2,
+    });
+    expect(inquirer.select).not.toHaveBeenCalled();
   });
 
   it('exibe mensagem quando nenhum comando disponível', async () => {

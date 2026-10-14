@@ -31,3 +31,15 @@ Valem para qualquer comando, antes ou depois dele. Tudo depois de `--` é entreg
 | `130`  | Interrompido (Ctrl+C)                   |
 
 Erros vão para **stderr**, em uma ou duas linhas (mensagem + dica). O stack só aparece com `--verbose`.
+
+## Modo não interativo
+
+A CLI **nunca** abre prompt nem executa comando por conta própria sem um terminal de verdade.
+Ela é "interativa" somente se stdin **e** stdout forem TTY e não houver `--no-input`, `--json` nem `CI=true`.
+
+- `vox` sem argumentos: interativa → abre o menu; **não interativa → imprime a ajuda** (código 0).
+- `vox menu` sem terminal: recusa com código `2` (`INTERACTIVE_REQUIRED`).
+- Pergunta de confirmação: com `--yes` segue; sem terminal e sem `--yes` falha com código `4`
+  (`CONFIRMATION_REQUIRED`) e diz para repetir com `--yes`. Nunca fica esperando resposta.
+- Sem TTY, cores são desligadas automaticamente (também com `NO_COLOR` ou `--plain`).
+- Ctrl+C dentro de um prompt encerra com `130`, sem stack.

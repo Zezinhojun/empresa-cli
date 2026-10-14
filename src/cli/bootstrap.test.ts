@@ -6,6 +6,12 @@ import { bootstrap } from './bootstrap.js';
 
 vi.mock('../commands/index.js', () => ({}));
 
+const setTty = (value: boolean) => {
+  for (const stream of [process.stdin, process.stdout]) {
+    Object.defineProperty(stream, 'isTTY', { configurable: true, value });
+  }
+};
+
 describe('bootstrap', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
   const execute = vi.fn();
@@ -23,9 +29,13 @@ describe('bootstrap', () => {
     registry.register({ args: [], execute: menu, name: 'menu' });
     registry.register({ execute, name: 'livre' }); // sem args declarados: não valida
     logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.stubEnv('CI', '');
+    setTty(true);
   });
 
   afterEach(() => {
+    setTty(false);
+    vi.unstubAllEnvs();
     vi.restoreAllMocks();
     vi.clearAllMocks();
   });
@@ -54,10 +64,31 @@ describe('bootstrap', () => {
     expect(execute).not.toHaveBeenCalled();
   });
 
-  it('sem argumentos abre o menu', async () => {
+  it('sem argumentos e COM terminal interativo abre o menu', async () => {
     await bootstrap([]);
 
     expect(menu).toHaveBeenCalledOnce();
+  });
+
+  it.each([
+    ['sem terminal (pipe)', () => setTty(false), []],
+    ['--no-input', () => {}, ['--no-input']],
+    ['--json', () => {}, ['--json']],
+  ])('sem argumentos e %s: mostra a ajuda e NUNCA abre o menu', async (_nome, preparar, argv) => {
+    preparar();
+
+    await bootstrap(argv);
+
+    expect(menu).not.toHaveBeenCalled();
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('Comandos:');
+  });
+
+  it('com CI=true não abre o menu mesmo com terminal', async () => {
+    vi.stubEnv('CI', 'true');
+
+    await bootstrap([]);
+
+    expect(menu).not.toHaveBeenCalled();
   });
 
   it('executa o comando com os argumentos e sem as flags globais', async () => {

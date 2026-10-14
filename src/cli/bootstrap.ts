@@ -6,6 +6,7 @@ import { CommandExecutor, CommandRegistry, type Command } from '../core/command/
 import { CliError, ExitCode } from './errors.js';
 import { printCommandHelp, printHelp, usage } from './help.js';
 import { parseArgv } from './parseArgv.js';
+import { resolveRuntime, setRuntime } from './runtime.js';
 
 const HELP_HINT = "Use 'vox --help' para ver os comandos disponíveis.";
 
@@ -26,6 +27,8 @@ export async function bootstrap(argv: string[] = process.argv.slice(2)) {
   const registry = CommandRegistry.getInstance();
   const executor = new CommandExecutor(registry);
   const { args, command: name, flags, unknown } = parseArgv(argv);
+  const runtime = resolveRuntime(flags);
+  setRuntime(runtime);
 
   if (unknown.length > 0) {
     throw new CliError(
@@ -58,6 +61,11 @@ export async function bootstrap(argv: string[] = process.argv.slice(2)) {
   }
 
   if (!command) {
+    // Sem terminal interativo (agente, CI, pipe) o menu nunca abre: mostra a ajuda.
+    if (!runtime.interactive) {
+      printHelp(registry);
+      return;
+    }
     console.log(chalk.bold('VOX CLI inicializada'));
     await executor.execute('menu');
     return;
