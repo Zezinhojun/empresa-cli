@@ -58,7 +58,14 @@ describe('reportError', () => {
         writes.push(String(chunk));
         return true;
       });
-      setRuntime({ interactive: false, json: true, plain: true, verbose: false, yes: false });
+      setRuntime({
+        dryRun: false,
+        interactive: false,
+        json: true,
+        plain: true,
+        verbose: false,
+        yes: false,
+      });
     });
 
     afterEach(resetRuntime);
@@ -73,6 +80,18 @@ describe('reportError', () => {
         schemaVersion: 1,
       });
       expect(errorSpy).not.toHaveBeenCalled();
+    });
+
+    it('details do CliError vão no JSON (ex.: código de saída do script)', () => {
+      reportError(
+        new CliError('falhou', 1, 'SCRIPT_FAILED', undefined, { exitCode: 3, stdout: 'x' }),
+      );
+
+      expect(json().error).toEqual({
+        code: 'SCRIPT_FAILED',
+        details: { exitCode: 3, stdout: 'x' },
+        message: 'falhou',
+      });
     });
 
     it('erro comum: code ERROR, exit 1, sem hint', () => {

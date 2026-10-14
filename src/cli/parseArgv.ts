@@ -1,4 +1,5 @@
 export interface GlobalFlags {
+  dryRun: boolean;
   help: boolean;
   json: boolean;
   noInput: boolean;
@@ -18,6 +19,7 @@ export interface ParsedArgv {
 }
 
 const FLAG_NAMES: Record<string, keyof GlobalFlags> = {
+  '--dry-run': 'dryRun',
   '--help': 'help',
   '--json': 'json',
   '--no-input': 'noInput',
@@ -36,6 +38,7 @@ const FLAG_NAMES: Record<string, keyof GlobalFlags> = {
  */
 export function parseArgv(argv: string[]): ParsedArgv {
   const flags: GlobalFlags = {
+    dryRun: false,
     help: false,
     json: false,
     noInput: false,

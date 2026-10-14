@@ -17,6 +17,7 @@ const BASE = path.join('/mock', 'arquitetura');
 const entry = (name: string, dir: boolean) =>
   ({ isDirectory: () => dir, name }) as unknown as Dirent;
 const rt = (plain: boolean): Runtime => ({
+  dryRun: false,
   interactive: false,
   json: false,
   plain,

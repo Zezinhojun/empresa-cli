@@ -7,15 +7,16 @@ Este documento é o contrato estável: o que a CLI promete em flags, códigos de
 
 Valem para qualquer comando, antes ou depois dele. Tudo depois de `--` é entregue literal ao comando.
 
-| Flag              | Efeito                                             |
-| ----------------- | -------------------------------------------------- |
-| `-h`, `--help`    | Ajuda geral ou do comando (`vox <comando> --help`) |
-| `-v`, `--version` | Versão                                             |
-| `--json`          | Saída JSON (apenas dados em stdout)                |
-| `--plain`         | Sem cores nem emojis                               |
-| `--no-input`      | Nunca pergunta nada: falha em vez de abrir prompt  |
-| `-y`, `--yes`     | Confirma automaticamente as perguntas              |
-| `--verbose`       | Detalhes técnicos (stack) nos erros                |
+| Flag              | Efeito                                               |
+| ----------------- | ---------------------------------------------------- |
+| `-h`, `--help`    | Ajuda geral ou do comando (`vox <comando> --help`)   |
+| `-v`, `--version` | Versão                                               |
+| `--json`          | Saída JSON (apenas dados em stdout)                  |
+| `--plain`         | Sem cores nem emojis                                 |
+| `--dry-run`       | Mostra o que seria executado, sem executar (scripts) |
+| `--no-input`      | Nunca pergunta nada: falha em vez de abrir prompt    |
+| `-y`, `--yes`     | Confirma automaticamente as perguntas                |
+| `--verbose`       | Detalhes técnicos (stack) nos erros                  |
 
 `vox help <comando>` equivale a `vox <comando> --help`. Opção desconhecida é erro de uso (código 2).
 
@@ -61,7 +62,7 @@ Sucesso:
 }
 ```
 
-Erro (`code` é estável; `hint` e `stack` são opcionais, o stack só com `--verbose`):
+Erro (`code` é estável; `hint`, `details` e `stack` são opcionais, o stack só com `--verbose`):
 
 ```json
 {
@@ -75,18 +76,23 @@ Erro (`code` é estável; `hint` e `stack` são opcionais, o stack só com `--ve
 
 ### Códigos de erro (`error.code`)
 
-| Código                  | Exit | Quando                                              |
-| ----------------------- | ---- | --------------------------------------------------- |
-| `UNKNOWN_COMMAND`       | 2    | Comando inexistente                                 |
-| `UNKNOWN_OPTION`        | 2    | Opção começada por `-` que a CLI não conhece        |
-| `INVALID_ARGUMENTS`     | 2    | Faltam ou sobram argumentos                         |
-| `INTERACTIVE_REQUIRED`  | 2    | Comando só funciona com terminal (ex.: `menu`)      |
-| `PATH_OUTSIDE_BASE`     | 2    | `list-vox` com subpasta fora de `~/vox/arquitetura` |
-| `CONFIRMATION_REQUIRED` | 4    | Ação pede confirmação e não há terminal nem `--yes` |
-| `NOT_FOUND`             | 1    | Pasta inexistente                                   |
-| `PERMISSION_DENIED`     | 1    | Sem permissão de leitura                            |
-| `COMMAND_FAILED`        | 1    | Comando de sistema falhou (ex.: `ps`/PowerShell)    |
-| `ERROR`                 | 1    | Qualquer outro erro                                 |
+| Código                    | Exit | Quando                                                |
+| ------------------------- | ---- | ----------------------------------------------------- |
+| `UNKNOWN_COMMAND`         | 2    | Comando inexistente                                   |
+| `UNKNOWN_OPTION`          | 2    | Opção começada por `-` que a CLI não conhece          |
+| `INVALID_ARGUMENTS`       | 2    | Faltam ou sobram argumentos                           |
+| `INTERACTIVE_REQUIRED`    | 2    | Comando só funciona com terminal (ex.: `menu`)        |
+| `PATH_OUTSIDE_BASE`       | 2    | `list-vox` com subpasta fora de `~/vox/arquitetura`   |
+| `CONFIRMATION_REQUIRED`   | 4    | Ação pede confirmação e não há terminal nem `--yes`   |
+| `NOT_FOUND`               | 1    | Pasta inexistente                                     |
+| `PERMISSION_DENIED`       | 1    | Sem permissão de leitura                              |
+| `COMMAND_FAILED`          | 1    | Comando de sistema falhou (ex.: `ps`/PowerShell)      |
+| `SCRIPT_FAILED`           | 1    | Script saiu com código ≠ 0 (`error.details.exitCode`) |
+| `SCRIPT_TIMEOUT`          | 1    | Script passou do tempo limite e foi interrompido      |
+| `SCRIPT_OUTPUT_TOO_LARGE` | 1    | Script gerou saída demais e foi interrompido          |
+| `MISSING_RUNTIME`         | 3    | Falta Bash, Python 3 ou outro interpretador do script |
+| `UNSUPPORTED_SCRIPT_TYPE` | 2    | Extensão de script que a CLI não executa              |
+| `ERROR`                   | 1    | Qualquer outro erro                                   |
 
 ## Descobrir comandos
 

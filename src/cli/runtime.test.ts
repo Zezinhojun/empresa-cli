@@ -2,13 +2,24 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { getRuntime, resetRuntime, resolveRuntime, setRuntime } from './runtime.js';
 
-const flags = { json: false, noInput: false, plain: false, verbose: false, yes: false };
+const flags = {
+  dryRun: false,
+  json: false,
+  noInput: false,
+  plain: false,
+  verbose: false,
+  yes: false,
+};
 const tty = { isTTY: true };
 const pipe = { isTTY: undefined };
 
 describe('resolveRuntime', () => {
   it('terminal de verdade sem flags: interativo', () => {
-    expect(resolveRuntime(flags, {}, tty, tty)).toMatchObject({ interactive: true, plain: false });
+    expect(resolveRuntime(flags, {}, tty, tty)).toMatchObject({
+      dryRun: false,
+      interactive: true,
+      plain: false,
+    });
   });
 
   it.each([
@@ -41,10 +52,16 @@ describe('resolveRuntime', () => {
     expect(resolveRuntime(flags, { NO_COLOR: '' }, tty, tty).plain).toBe(false);
   });
 
-  it('repassa json, verbose e yes', () => {
+  it('repassa dryRun, json, verbose e yes', () => {
     expect(
-      resolveRuntime({ ...flags, json: true, verbose: true, yes: true }, {}, tty, tty),
+      resolveRuntime(
+        { ...flags, dryRun: true, json: true, verbose: true, yes: true },
+        {},
+        tty,
+        tty,
+      ),
     ).toMatchObject({
+      dryRun: true,
       json: true,
       verbose: true,
       yes: true,
@@ -56,7 +73,14 @@ describe('get/set/resetRuntime', () => {
   afterEach(resetRuntime);
 
   it('usa o runtime definido e volta a deduzir do ambiente após o reset', () => {
-    const definido = { interactive: true, json: false, plain: false, verbose: false, yes: false };
+    const definido = {
+      dryRun: false,
+      interactive: true,
+      json: false,
+      plain: false,
+      verbose: false,
+      yes: false,
+    };
     setRuntime(definido);
     expect(getRuntime()).toBe(definido);
 

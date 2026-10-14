@@ -19,6 +19,8 @@ export class CliError extends Error {
     public readonly exitCode: number = ExitCode.error,
     public readonly code = 'ERROR',
     public readonly hint?: string | undefined,
+    /** Dados extras para quem lê o JSON (ex.: código de saída do script). */
+    public readonly details?: unknown,
   ) {
     super(message);
     this.name = 'CliError';
@@ -36,12 +38,19 @@ export function reportError(error: unknown, verbose = false): number {
   const exitCode = error instanceof CliError ? error.exitCode : ExitCode.error;
   const code = error instanceof CliError ? error.code : 'ERROR';
   const hint = error instanceof CliError ? error.hint : undefined;
+  const details = error instanceof CliError ? error.details : undefined;
   const message = error instanceof Error ? error.message : String(error);
   const stack = verbose && error instanceof Error ? error.stack : undefined;
 
   if (getRuntime().json) {
     emitJson({
-      error: { code, message, ...(hint && { hint }), ...(stack && { stack }) },
+      error: {
+        code,
+        message,
+        ...(hint && { hint }),
+        ...(details !== undefined && { details }),
+        ...(stack && { stack }),
+      },
       ok: false,
       schemaVersion: SCHEMA_VERSION,
     });

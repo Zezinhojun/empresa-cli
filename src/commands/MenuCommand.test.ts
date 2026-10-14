@@ -20,7 +20,14 @@ describe('MenuCommand', () => {
     (CommandRegistry as unknown as { instance?: CommandRegistry | undefined }).instance = undefined;
     registry = CommandRegistry.getInstance();
     menuCmd = new MenuCommand();
-    setRuntime({ interactive: true, json: false, plain: false, verbose: false, yes: false });
+    setRuntime({
+      dryRun: false,
+      interactive: true,
+      json: false,
+      plain: false,
+      verbose: false,
+      yes: false,
+    });
     vi.clearAllMocks();
   });
 
@@ -35,7 +42,14 @@ describe('MenuCommand', () => {
   });
 
   it('sem terminal interativo recusa (exit 2) em vez de abrir prompt', async () => {
-    setRuntime({ interactive: false, json: false, plain: true, verbose: false, yes: false });
+    setRuntime({
+      dryRun: false,
+      interactive: false,
+      json: false,
+      plain: true,
+      verbose: false,
+      yes: false,
+    });
 
     await expect(menuCmd.execute()).rejects.toMatchObject({
       code: 'INTERACTIVE_REQUIRED',
