@@ -37,4 +37,7 @@ jobs:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && vars.NPM_PUBLISH_ENABLED == 'true'
     uses: ./.github/workflows/publish.yml
+    permissions:
+      contents: read
+      id-token: write # o publish.yml usa para provenance
     secrets: inherit
