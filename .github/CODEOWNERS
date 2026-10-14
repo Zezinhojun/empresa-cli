@@ -1,0 +1,6 @@
+# Código que executa coisas na máquina dos usuários: sempre com revisão do dono.
+/vox-scripts/            @Zezinhojun
+/src/runner/             @Zezinhojun
+/src/commands/Script*    @Zezinhojun
+/.github/workflows/      @Zezinhojun
+/docs/security/          @Zezinhojun

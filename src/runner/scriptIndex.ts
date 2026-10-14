@@ -31,14 +31,65 @@ export class ScriptIndexError extends Error {
 
 const sha256 = (file: string) => createHash('sha256').update(readFileSync(file)).digest('hex');
 
-/** Arquivos da pasta (recursivo), como caminhos relativos com "/", em ordem estável. */
-function listFiles(dir: string, prefix = ''): string[] {
-  return readdirSync(dir, { withFileTypes: true })
-    .flatMap((entry) => {
-      const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
-      return entry.isDirectory() ? listFiles(path.join(dir, entry.name), relative) : [relative];
-    })
-    .sort();
+interface Scan {
+  /** Arquivos comuns, como caminhos relativos com "/", em ordem estável. */
+  files: string[];
+  /** Links simbólicos: não são permitidos (poderiam apontar para fora da pasta do script). */
+  symlinks: string[];
+}
+
+function scan(dir: string, prefix = ''): Scan {
+  const result: Scan = { files: [], symlinks: [] };
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const relative = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isSymbolicLink()) result.symlinks.push(relative);
+    else if (entry.isDirectory()) {
+      const inner = scan(path.join(dir, entry.name), relative);
+      result.files.push(...inner.files);
+      result.symlinks.push(...inner.symlinks);
+    } else result.files.push(relative);
+  }
+  result.files.sort();
+  result.symlinks.sort();
+  return result;
+}
+
+/** SHA-256 de cada arquivo da pasta, por caminho relativo. */
+export function hashDirectory(dir: string): Record<string, string> {
+  return Object.fromEntries(scan(dir).files.map((file) => [file, sha256(path.join(dir, file))]));
+}
+
+export interface IntegrityReport {
+  /** Existem mas o conteúdo mudou. */
+  changed: string[];
+  /** Estão no índice mas sumiram. */
+  missing: string[];
+  /** Existem na pasta mas não estão no índice (código que ninguém revisou). */
+  extra: string[];
+  symlinks: string[];
+}
+
+/** Compara o que está instalado com os hashes do build. `ok` só se for idêntico, sem sobras. */
+export function verifyDirectory(
+  dir: string,
+  expected: Record<string, string>,
+): { ok: boolean } & IntegrityReport {
+  const { files, symlinks } = scan(dir);
+  const present = new Set(files);
+
+  const missing = Object.keys(expected).filter((file) => !present.has(file));
+  const extra = files.filter((file) => !(file in expected));
+  const changed = files.filter(
+    (file) => file in expected && sha256(path.join(dir, file)) !== expected[file],
+  );
+
+  return {
+    changed,
+    extra,
+    missing,
+    ok: changed.length + extra.length + missing.length + symlinks.length === 0,
+    symlinks,
+  };
 }
 
 /**
@@ -90,16 +141,15 @@ export function buildIndex(root: string, reserved: Iterable<string> = []): Scrip
     }
     taken.add(manifest.name);
 
-    const files = listFiles(scriptDir);
+    const { files, symlinks } = scan(scriptDir);
+    for (const link of symlinks) {
+      problems.push(`${label}: "${link}" é um link simbólico (não permitido em scripts)`);
+    }
     if (!files.includes(manifest.entry.replaceAll('\\', '/'))) {
       problems.push(`${label}: o arquivo de entrada "${manifest.entry}" não existe`);
     }
 
-    scripts.push({
-      dir,
-      files: Object.fromEntries(files.map((file) => [file, sha256(path.join(scriptDir, file))])),
-      manifest,
-    });
+    scripts.push({ dir, files: hashDirectory(scriptDir), manifest });
   }
 
   if (problems.length > 0) throw new ScriptIndexError(problems);
