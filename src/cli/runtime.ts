@@ -2,6 +2,8 @@ import type { GlobalFlags } from './parseArgv.js';
 
 /** Como a CLI está sendo usada nesta execução (pessoa no terminal × agente/CI/pipe). */
 export interface Runtime {
+  /** Mostra o que seria executado, sem executar (scripts). */
+  dryRun: boolean;
   /** Pode abrir prompts? Só com terminal de verdade e sem --no-input/--json/CI. */
   interactive: boolean;
   json: boolean;
@@ -22,7 +24,7 @@ interface Tty {
 }
 
 export function resolveRuntime(
-  flags: Pick<GlobalFlags, 'json' | 'noInput' | 'plain' | 'verbose' | 'yes'>,
+  flags: Pick<GlobalFlags, 'dryRun' | 'json' | 'noInput' | 'plain' | 'verbose' | 'yes'>,
   env: Env = process.env,
   stdin: Tty = process.stdin,
   stdout: Tty = process.stdout,
@@ -31,6 +33,7 @@ export function resolveRuntime(
   const terminal = Boolean(stdin.isTTY && stdout.isTTY);
 
   return {
+    dryRun: flags.dryRun,
     interactive: terminal && !flags.noInput && !flags.json && !ci,
     json: flags.json,
     plain: flags.plain || flags.json || !stdout.isTTY || (env.NO_COLOR ?? '') !== '',
@@ -48,6 +51,7 @@ export function setRuntime(runtime: Runtime) {
 /** Runtime da execução atual; se ninguém definiu, deduz do ambiente (sem flags). */
 export function getRuntime(): Runtime {
   current ??= resolveRuntime({
+    dryRun: false,
     json: false,
     noInput: false,
     plain: false,

@@ -4,7 +4,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { confirmAction } from './confirm.js';
 import { resetRuntime, setRuntime } from './runtime.js';
 
-const base = { interactive: false, json: false, plain: false, verbose: false, yes: false };
+const base = {
+  dryRun: false,
+  interactive: false,
+  json: false,
+  plain: false,
+  verbose: false,
+  yes: false,
+};
 
 describe('confirmAction', () => {
   afterEach(() => {

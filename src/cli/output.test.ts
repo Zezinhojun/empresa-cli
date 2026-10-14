@@ -5,7 +5,14 @@ import type { Command } from '../core/command/Command.js';
 import { emitData, emitJson, printResult, SCHEMA_VERSION } from './output.js';
 import { resetRuntime, setRuntime } from './runtime.js';
 
-const base = { interactive: false, json: false, plain: true, verbose: false, yes: false };
+const base = {
+  dryRun: false,
+  interactive: false,
+  json: false,
+  plain: true,
+  verbose: false,
+  yes: false,
+};
 
 describe('output', () => {
   let logSpy: ReturnType<typeof vi.spyOn>;

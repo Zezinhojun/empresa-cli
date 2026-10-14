@@ -18,6 +18,7 @@ describe('parseArgv', () => {
     ['--json', 'json'],
     ['--plain', 'plain'],
     ['--no-input', 'noInput'],
+    ['--dry-run', 'dryRun'],
     ['--yes', 'yes'],
     ['-y', 'yes'],
     ['--verbose', 'verbose'],
