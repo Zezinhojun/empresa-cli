@@ -4,6 +4,27 @@
   "description": "CLI interna para automação de tarefas da empresa",
   "author": "José Antônio jose.antonio@voxtecnologia.com",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zezinhojun/empresa-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Zezinhojun/empresa-cli/issues"
+  },
+  "homepage": "https://github.com/Zezinhojun/empresa-cli#readme",
+  "keywords": [
+    "cli",
+    "vox",
+    "automation",
+    "devops"
+  ],
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "type": "module",
   "bin": {
     "vox": "./dist/index.js"
@@ -15,6 +36,8 @@
     "dev": "tsx src/index.ts",
     "build": "tsup",
     "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
