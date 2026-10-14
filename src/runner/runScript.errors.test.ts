@@ -25,7 +25,7 @@ describe('runScript: dependência ausente', () => {
   it.each([
     ['a.sh', 'Bash', 'bash'],
     ['a.py', 'Python 3', 'python'],
-  ])(
+  ] as const)(
     '%s sem runtime: MISSING_RUNTIME (exit 3), não executa e explica o que instalar',
     async (entry, label, runtime) => {
       vi.mocked(findInterpreter).mockResolvedValueOnce(undefined);
