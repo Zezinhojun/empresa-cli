@@ -9,6 +9,7 @@ import type { Runtime } from '../cli/runtime.js';
 import pkg from '../../package.json' with { type: 'json' };
 import { resetRuntime, setRuntime } from '../cli/runtime.js';
 import { parseManifest, type Manifest } from '../runner/manifest.js';
+import { hashDirectory } from '../runner/scriptIndex.js';
 import { ScriptCommand } from './ScriptCommand.js';
 
 // Os scripts rodam de verdade: usa o execa real, não o mock global do setup.
@@ -32,9 +33,14 @@ const manifest = (extra: Record<string, unknown> = {}): Manifest =>
     { description: 'Faz algo', entry: 'run.js', name: 'meu-script', risk: 'read', ...extra },
     'teste',
   );
-const command = (extra: Record<string, unknown> = {}) => new ScriptCommand(manifest(extra), dir);
+const command = (extra: Record<string, unknown> = {}) =>
+  new ScriptCommand(manifest(extra), dir, hashDirectory(dir));
+
+/** Marcadores ficam FORA da pasta do script: arquivo novo lá dentro é "código não revisado". */
+let out: string;
 
 beforeAll(() => {
+  out = mkdtempSync(path.join(tmpdir(), 'vox-script-out-'));
   dir = mkdtempSync(path.join(tmpdir(), 'vox-script-'));
   mkdirSync(path.join(dir, 'x'));
   writeFileSync(
@@ -45,7 +51,10 @@ beforeAll(() => {
      if (process.argv[2] === 'falhar') process.exit(2);`,
   );
 });
-afterAll(() => rmSync(dir, { force: true, recursive: true }));
+afterAll(() => {
+  rmSync(dir, { force: true, recursive: true });
+  rmSync(out, { force: true, recursive: true });
+});
 afterEach(() => {
   resetRuntime();
   vi.clearAllMocks();
@@ -156,7 +165,7 @@ describe('ScriptCommand.execute (risk: read)', () => {
 describe('ScriptCommand: sistema operacional e requisitos', () => {
   it('sistema não suportado: UNSUPPORTED_OS (exit 3) e não executa', async () => {
     setRuntime(agent);
-    const marca = path.join(dir, 'marca-os');
+    const marca = path.join(out, 'marca-os');
 
     await expect(command({ os: [OTHER_OS] }).execute([])).rejects.toMatchObject({
       code: 'UNSUPPORTED_OS',
@@ -211,7 +220,7 @@ describe('ScriptCommand: sistema operacional e requisitos', () => {
 });
 
 describe.each(['write', 'destructive'] as const)('ScriptCommand (risk: %s)', (risk) => {
-  const marca = () => path.join(dir, `marca-${risk}-${Math.random().toString(36).slice(2)}`);
+  const marca = () => path.join(out, `marca-${risk}-${Math.random().toString(36).slice(2)}`);
   /** O script cria `file` se for executado: é como sabemos se rodou ou não. */
   const runWith = (runtime: Runtime, file: string) => {
     setRuntime(runtime);

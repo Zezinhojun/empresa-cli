@@ -5,8 +5,9 @@ então passam por PR, revisão e CI como qualquer outro código (decisão em
 [ADR 0002](../docs/adr/0002-scripts-empacotados.md)). Quem usa **não precisa saber** se o script é `.sh`,
 `.py` ou `.js`: a `vox` descobre como executar.
 
-> **Antes do primeiro script real entrar**, o runner precisa passar pela revisão de segurança da issue #46
-> (verificação de hash, log de auditoria etc.).
+> **Segurança:** scripts são código executado na máquina de todos. Leia o
+> [modelo de ameaças](../docs/security/runner.md) e use o checklist de revisão dele. O **primeiro script real
+> só entra depois da aprovação humana dessa revisão** (pendência registrada no documento).
 
 ## Como criar um script
 
@@ -80,6 +81,16 @@ Na dúvida, escolha o risco **mais alto**. O menu mostra `[altera coisas]` / `[p
   falhe com uma mensagem clara.
 - **Saída:** escreva o resultado em `stdout` e avisos em `stderr`. Saia com `0` em sucesso; qualquer outro
   código vira o erro `SCRIPT_FAILED` (com o código real em `error.details.exitCode`).
+
+## Integridade e auditoria
+
+- **Integridade:** no build, cada arquivo do script recebe um SHA-256. Antes de executar, a CLI confere a
+  pasta inteira: arquivo **alterado, removido, acrescentado** ou **link simbólico** reprova (`INTEGRITY_ERROR`)
+  e **nada executa**. Por isso: não crie arquivos dentro da pasta do script em tempo de execução (use um
+  diretório temporário) e **não use links simbólicos**.
+- **Auditoria:** toda tentativa de executar (inclusive as negadas e as bloqueadas) é gravada em
+  `~/.vox/audit.log`: quem, quando, qual script, argumentos (com segredos mascarados), risco, resultado.
+  A saída do script **não** é gravada. **Não passe segredos por argumento**; use variável de ambiente ou arquivo.
 
 ## Testando
 

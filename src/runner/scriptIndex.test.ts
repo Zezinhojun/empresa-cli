@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -7,9 +7,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   buildIndex,
   findScriptsRoot,
+  hashDirectory,
   INDEX_FILE,
   readIndex,
   ScriptIndexError,
+  verifyDirectory,
 } from './scriptIndex.js';
 
 let root: string;
@@ -202,6 +204,81 @@ describe('readIndex', () => {
     write(built);
 
     expect(() => readIndex(root)).toThrow(/campo desconhecido "rodar"/);
+  });
+});
+
+describe('hashDirectory / verifyDirectory', () => {
+  let dir: string;
+  const put = (file: string, content: string) => {
+    mkdirSync(path.dirname(path.join(dir, file)), { recursive: true });
+    writeFileSync(path.join(dir, file), content);
+  };
+
+  beforeEach(() => {
+    dir = path.join(root, 'alvo');
+    put('run.js', 'abc');
+    put('lib/util.js', 'x');
+  });
+
+  it('hashDirectory: SHA-256 por arquivo, recursivo, com "/"', () => {
+    expect(hashDirectory(dir)).toEqual({
+      'lib/util.js': '2d711642b726b04401627ca9fbac32f5c8530fb1903cc4db02258717921a4881',
+      'run.js': 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+    });
+  });
+
+  it('idêntico ao do build: ok, sem nada a reportar', () => {
+    expect(verifyDirectory(dir, hashDirectory(dir))).toEqual({
+      changed: [],
+      extra: [],
+      missing: [],
+      ok: true,
+      symlinks: [],
+    });
+  });
+
+  it('separa o que mudou, o que sumiu e o que sobrou', () => {
+    const expected = hashDirectory(dir);
+    put('run.js', 'abc!'); // mudou
+    unlinkSync(path.join(dir, 'lib', 'util.js')); // sumiu
+    put('novo.js', 'y'); // sobrou
+
+    expect(verifyDirectory(dir, expected)).toEqual({
+      changed: ['run.js'],
+      extra: ['novo.js'],
+      missing: ['lib/util.js'],
+      ok: false,
+      symlinks: [],
+    });
+  });
+
+  it('quebra de linha CRLF conta como mudança (comparação é por bytes)', () => {
+    const expected = hashDirectory(dir);
+    put('run.js', 'a\r\nb');
+
+    expect(verifyDirectory(dir, expected).changed).toEqual(['run.js']);
+  });
+
+  it('link simbólico é reportado e reprova', (context) => {
+    const expected = hashDirectory(dir);
+    try {
+      symlinkSync(path.join(root, 'fora'), path.join(dir, 'atalho'));
+    } catch {
+      context.skip(); // Windows sem privilégio para criar links
+    }
+
+    expect(verifyDirectory(dir, expected)).toMatchObject({ ok: false, symlinks: ['atalho'] });
+  });
+
+  it('buildIndex recusa script com link simbólico', (context) => {
+    script('com-link', { description: 'x', entry: 'run.js', name: 'com-link', risk: 'read' });
+    try {
+      symlinkSync(path.join(root, 'fora'), path.join(root, 'com-link', 'atalho'));
+    } catch {
+      context.skip();
+    }
+
+    expect(() => buildIndex(root)).toThrow(/"atalho" é um link simbólico/);
   });
 });
 

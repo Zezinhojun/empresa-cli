@@ -76,27 +76,28 @@ Erro (`code` é estável; `hint`, `details` e `stack` são opcionais, o stack s�
 
 ### Códigos de erro (`error.code`)
 
-| Código                    | Exit | Quando                                                    |
-| ------------------------- | ---- | --------------------------------------------------------- |
-| `UNKNOWN_COMMAND`         | 2    | Comando inexistente                                       |
-| `UNKNOWN_OPTION`          | 2    | Opção começada por `-` que a CLI não conhece              |
-| `INVALID_ARGUMENTS`       | 2    | Faltam ou sobram argumentos                               |
-| `INTERACTIVE_REQUIRED`    | 2    | Comando só funciona com terminal (ex.: `menu`)            |
-| `PATH_OUTSIDE_BASE`       | 2    | `list-vox` com subpasta fora de `~/vox/arquitetura`       |
-| `CONFIRMATION_REQUIRED`   | 4    | Ação pede confirmação e não há terminal nem `--yes`       |
-| `NOT_FOUND`               | 1    | Arquivo ou pasta inexistente (inclui `ENOENT` do sistema) |
-| `PERMISSION_DENIED`       | 1    | Sem permissão (inclui `EACCES`/`EPERM` do sistema)        |
-| `DISK_FULL`               | 1    | Sem espaço em disco (`ENOSPC`)                            |
-| `COMMAND_FAILED`          | 1    | Comando de sistema falhou (ex.: `ps`/PowerShell)          |
-| `SCRIPT_FAILED`           | 1    | Script saiu com código ≠ 0 (`error.details.exitCode`)     |
-| `SCRIPT_TIMEOUT`          | 1    | Script passou do tempo limite e foi interrompido          |
-| `SCRIPT_OUTPUT_TOO_LARGE` | 1    | Script gerou saída demais e foi interrompido              |
-| `MISSING_RUNTIME`         | 3    | Falta Bash, Python 3 ou outro interpretador do script     |
-| `UNSUPPORTED_SCRIPT_TYPE` | 2    | Extensão de script que a CLI não executa                  |
-| `UNSUPPORTED_OS`          | 3    | O script não funciona neste sistema (`error.details.os`)  |
-| `MISSING_REQUIREMENT`     | 3    | Falta um programa que o script exige (`details.missing`)  |
-| `CANCELLED`               | 1    | A pessoa respondeu "não" à confirmação                    |
-| `ERROR`                   | 1    | Qualquer outro erro                                       |
+| Código                    | Exit | Quando                                                                                                                           |
+| ------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `UNKNOWN_COMMAND`         | 2    | Comando inexistente                                                                                                              |
+| `UNKNOWN_OPTION`          | 2    | Opção começada por `-` que a CLI não conhece                                                                                     |
+| `INVALID_ARGUMENTS`       | 2    | Faltam ou sobram argumentos                                                                                                      |
+| `INTERACTIVE_REQUIRED`    | 2    | Comando só funciona com terminal (ex.: `menu`)                                                                                   |
+| `PATH_OUTSIDE_BASE`       | 2    | `list-vox` com subpasta fora de `~/vox/arquitetura`                                                                              |
+| `CONFIRMATION_REQUIRED`   | 4    | Ação pede confirmação e não há terminal nem `--yes`                                                                              |
+| `NOT_FOUND`               | 1    | Arquivo ou pasta inexistente (inclui `ENOENT` do sistema)                                                                        |
+| `PERMISSION_DENIED`       | 1    | Sem permissão (inclui `EACCES`/`EPERM` do sistema)                                                                               |
+| `DISK_FULL`               | 1    | Sem espaço em disco (`ENOSPC`)                                                                                                   |
+| `COMMAND_FAILED`          | 1    | Comando de sistema falhou (ex.: `ps`/PowerShell)                                                                                 |
+| `SCRIPT_FAILED`           | 1    | Script saiu com código ≠ 0 (`error.details.exitCode`)                                                                            |
+| `SCRIPT_TIMEOUT`          | 1    | Script passou do tempo limite e foi interrompido                                                                                 |
+| `SCRIPT_OUTPUT_TOO_LARGE` | 1    | Script gerou saída demais e foi interrompido                                                                                     |
+| `MISSING_RUNTIME`         | 3    | Falta Bash, Python 3 ou outro interpretador do script                                                                            |
+| `UNSUPPORTED_SCRIPT_TYPE` | 2    | Extensão de script que a CLI não executa                                                                                         |
+| `UNSUPPORTED_OS`          | 3    | O script não funciona neste sistema (`error.details.os`)                                                                         |
+| `MISSING_REQUIREMENT`     | 3    | Falta um programa que o script exige (`details.missing`)                                                                         |
+| `CANCELLED`               | 1    | A pessoa respondeu "não" à confirmação                                                                                           |
+| `INTEGRITY_ERROR`         | 1    | Arquivos do script foram alterados depois da instalação (`details`: `changed`, `missing`, `extra`, `symlinks`); **nada executa** |
+| `ERROR`                   | 1    | Qualquer outro erro                                                                                                              |
 
 ## Descobrir comandos
 

@@ -20,7 +20,9 @@ export function registerScriptCommands(
   if (!root || !index) return 0;
 
   for (const script of index.scripts) {
-    registry.register(new ScriptCommand(script.manifest, path.join(root, script.dir)));
+    registry.register(
+      new ScriptCommand(script.manifest, path.join(root, script.dir), script.files),
+    );
   }
   return index.scripts.length;
 }
