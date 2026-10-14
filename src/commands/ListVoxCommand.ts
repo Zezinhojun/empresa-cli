@@ -7,6 +7,7 @@ import { listDirectory } from '../core/utils/ListDirectory.js';
 import { getVoxArquiteturaPath } from '../vox/directories/VoxArquitetura.js';
 
 export class ListVoxCommand implements Command {
+  public readonly args = [{ description: 'Subpasta de ~/vox/arquitetura', name: 'subpasta' }];
   public readonly name = 'list-vox';
   public readonly description = 'Lista o conteúdo da pasta ~/vox';
 

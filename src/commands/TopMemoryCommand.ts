@@ -27,6 +27,7 @@ export function parsePs(stdout: string): Proc[] {
 }
 
 export class TopMemoryCommand implements Command {
+  public readonly args = [];
   public readonly name = 'top-memory';
   public readonly description = `Lista os ${TOP} processos que mais consomem memória`;
 
