@@ -4,7 +4,15 @@ import { defineConfig } from 'vitest/config';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Os .md importados pelo código viram texto, como no bundle do tsup.
+const markdownAsText = {
+  name: 'markdown-as-text',
+  transform: (code: string, id: string) =>
+    id.endsWith('.md') ? { code: `export default ${JSON.stringify(code)};`, map: null } : null,
+};
+
 export default defineConfig({
+  plugins: [markdownAsText],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),

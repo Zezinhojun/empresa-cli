@@ -113,6 +113,16 @@ try {
     'top-memory --json: processos com pid e memoryMb numéricos',
   );
 
+  assert(
+    vox('agent-guide').includes('Guia rápido para agentes de IA'),
+    'vox agent-guide imprime o guia embutido no pacote',
+  );
+  const guia = json('agent-guide').data;
+  assert(
+    guia.guide.length > 0 && guia.contract.length > 0 && guia.catalog.commands.length > 0,
+    'agent-guide --json: guia + contrato + catálogo numa só chamada',
+  );
+
   const ausente = exec('list-vox', 'nao-existe', '--json');
   assert(
     ausente.status === 1 &&
