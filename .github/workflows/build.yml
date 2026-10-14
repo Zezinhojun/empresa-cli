@@ -2,11 +2,20 @@ name: Build
 
 on:
   workflow_call:
+    inputs:
+      staging:
+        description: 'Adiciona o sufixo -staging.<run_number> à versão do pacote'
+        type: boolean
+        default: false
 
 jobs:
   build:
-    name: Build CLI (Node 22 LTS)
-    runs-on: ubuntu-latest
+    name: Build + smoke (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -14,4 +23,19 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npm run build
+      - name: Versão de staging
+        if: inputs.staging
+        shell: bash
+        run: npm version "$(node -p "require('./package.json').version")-staging.${{ github.run_number }}" --no-git-tag-version
+      - name: Smoke test do pacote instalado
+        run: npm run smoke
+      - name: Empacota o artefato publicável
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: mkdir -p out && npm pack --pack-destination out
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: package-tgz
+          path: out/*.tgz
+          if-no-files-found: error
