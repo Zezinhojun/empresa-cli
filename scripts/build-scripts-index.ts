@@ -4,6 +4,9 @@
  * já são dos comandos nativos e não podem ser usados por scripts.
  *
  * Uso: npm run scripts:index
+ *
+ * `VOX_ROOT=<pasta>` aponta para OUTRA raiz de pacote (com `dist/` e `vox-scripts/`), em vez do
+ * repositório: o smoke test usa isso para indexar scripts de teste dentro de um pacote já instalado.
  */
 import { execFileSync } from 'node:child_process';
 import { rmSync, writeFileSync } from 'node:fs';
@@ -11,7 +14,9 @@ import path from 'node:path';
 
 import { buildIndex, INDEX_FILE, ScriptIndexError } from '../src/runner/scriptIndex.js';
 
-const ROOT = path.resolve(import.meta.dirname, '..');
+const ROOT = process.env.VOX_ROOT
+  ? path.resolve(process.env.VOX_ROOT)
+  : path.resolve(import.meta.dirname, '..');
 const SCRIPTS = path.join(ROOT, 'vox-scripts');
 const CLI = path.join(ROOT, 'dist', 'index.js');
 

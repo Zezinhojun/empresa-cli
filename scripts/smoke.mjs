@@ -5,13 +5,24 @@
  * Uso: npm run smoke
  */
 import { execSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  appendFileSync,
+  cpSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
-const ALLOWED = /^(dist\/.+|package\.json|README\.md|LICENSE)$/;
+const ALLOWED = /^(dist\/.+|package\.json|README\.md|LICENSE|vox-scripts\/.+)$/;
+/** Tamanho máximo do tarball (comprimido): um salto grande aqui geralmente é arquivo que não devia entrar. */
+const MAX_TARBALL_BYTES = 300_000;
 
 const run = (cmd, cwd = ROOT) =>
   execSync(cmd, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] });
@@ -23,13 +34,22 @@ const assert = (ok, msg) => {
 const work = mkdtempSync(join(tmpdir(), 'vox-smoke-'));
 try {
   run('npm run build');
-  const [{ files, filename }] = JSON.parse(run(`npm pack --json --pack-destination "${work}"`));
+  const [{ files, filename, size }] = JSON.parse(
+    // --ignore-scripts: o build acabou de rodar acima; o prepack imprimiria o log dele no meio do JSON
+    run(`npm pack --ignore-scripts --json --pack-destination "${work}"`),
+  );
 
-  const extras = files.map((f) => f.path).filter((p) => !ALLOWED.test(p));
+  const paths = files.map((f) => f.path);
+  const extras = paths.filter((p) => !ALLOWED.test(p));
   assert(
     extras.length === 0,
     `tarball só contém arquivos de runtime (extras: ${extras.join(', ') || 'nenhum'})`,
   );
+  assert(
+    paths.includes('vox-scripts/index.json') && !paths.includes('vox-scripts/README.md'),
+    'tarball leva o índice de scripts (vox-scripts/index.json) e não leva o README de desenvolvimento',
+  );
+  assert(size < MAX_TARBALL_BYTES, `tarball pequeno: ${size} bytes (< ${MAX_TARBALL_BYTES})`);
 
   run('npm init -y', work);
   run(`npm install --no-audit --no-fund "${join(work, filename)}"`, work);
@@ -145,6 +165,63 @@ try {
   assert(
     fora.status === 2 && JSON.parse(fora.stdout).error.code === 'PATH_OUTSIDE_BASE',
     'list-vox não sai de ~/vox/arquitetura (../.. recusado, exit 2)',
+  );
+  // --- scripts empacotados: um de cada tipo, no pacote INSTALADO ---
+  // Os scripts de teste vivem em test/fixtures (nunca empacotados). Aqui eles são copiados para o
+  // pacote instalado e indexados, como o build faria, para exercitar descoberta, execução e integridade.
+  const pkgDir = join(work, 'node_modules', pkg.name);
+  cpSync(join(ROOT, 'test', 'fixtures', 'scripts'), join(pkgDir, 'vox-scripts'), {
+    recursive: true,
+  });
+  execSync('npx tsx scripts/build-scripts-index.ts', {
+    cwd: ROOT,
+    env: { ...process.env, VOX_ROOT: pkgDir },
+    stdio: ['ignore', 'pipe', 'inherit'],
+  });
+
+  const catalog = json('list').data.commands;
+  const scripts = catalog.filter((c) => c.kind === 'script').map((c) => c.name);
+  assert(
+    ['smoke-js', 'smoke-py', 'smoke-sh'].every((n) => scripts.includes(n)),
+    'vox list --json: os scripts do pacote aparecem como comandos (kind: script)',
+  );
+
+  const available = Object.fromEntries(json('doctor').data.checks.map((c) => [c.runtime, c.ok]));
+  const cases = [
+    ['smoke-js', 'node', 'js:["a b","c"]'],
+    ['smoke-sh', 'bash', 'sh:a b c'],
+    ['smoke-py', 'python', 'py:a b|c'],
+  ];
+  for (const [name, runtime, expected] of cases) {
+    if (!available[runtime]) {
+      console.log(`⚠ ${name} ignorado: este computador não tem ${runtime} (vox doctor)`);
+      continue;
+    }
+    const out = json(name, 'a b', 'c').data;
+    assert(
+      out.exitCode === 0 && out.runtime === runtime && out.stdout.trim() === expected,
+      `${name} executa pelo pacote instalado, com argumento com espaço intacto (${expected})`,
+    );
+  }
+
+  const auditFile = join(home, '.vox', 'audit.log');
+  assert(
+    existsSync(auditFile) && readFileSync(auditFile, 'utf8').includes('"script":"smoke-js"'),
+    'a execução ficou registrada em ~/.vox/audit.log',
+  );
+
+  // adulteração depois da instalação: o script alterado NÃO executa
+  const marker = join(work, 'executou-adulterado.txt');
+  appendFileSync(
+    join(pkgDir, 'vox-scripts', 'smoke-js', 'run.js'),
+    `\nimport('node:fs').then((fs) => fs.writeFileSync(${JSON.stringify(marker)}, 'x'));\n`,
+  );
+  const adulterado = exec('smoke-js', 'a b', 'c', '--json');
+  assert(
+    adulterado.status === 1 &&
+      JSON.parse(adulterado.stdout).error.code === 'INTEGRITY_ERROR' &&
+      !existsSync(marker),
+    'script adulterado depois da instalação é barrado (INTEGRITY_ERROR) e NÃO executa',
   );
   console.log('\nSMOKE OK');
 } catch (error) {

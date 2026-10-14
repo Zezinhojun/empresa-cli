@@ -1,0 +1,1 @@
+{"name":"smoke-sh","description":"Script de teste do smoke (run.sh)","entry":"run.sh","risk":"read","category":"smoke","args":[{"name":"texto","description":"Texto a ecoar","required":true},{"name":"extra","description":"Mais um argumento (opcional)"}]}
