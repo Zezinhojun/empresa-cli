@@ -33,10 +33,11 @@
     "node": ">=20 <25"
   },
   "scripts": {
-    "dev": "tsx src/index.ts",
-    "build": "tsup",
+    "dev": "tsup && node dist/index.js",
+    "build": "tsup && npm run scripts:index",
     "start": "node dist/index.js",
     "contract": "npm run build && vitest run --config vitest.contract.config.ts",
+    "scripts:index": "tsx scripts/build-scripts-index.ts",
     "smoke": "node scripts/smoke.mjs",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build",

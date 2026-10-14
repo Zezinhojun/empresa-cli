@@ -93,6 +93,9 @@ Erro (`code` é estável; `hint`, `details` e `stack` são opcionais, o stack s�
 | `SCRIPT_OUTPUT_TOO_LARGE` | 1    | Script gerou saída demais e foi interrompido              |
 | `MISSING_RUNTIME`         | 3    | Falta Bash, Python 3 ou outro interpretador do script     |
 | `UNSUPPORTED_SCRIPT_TYPE` | 2    | Extensão de script que a CLI não executa                  |
+| `UNSUPPORTED_OS`          | 3    | O script não funciona neste sistema (`error.details.os`)  |
+| `MISSING_REQUIREMENT`     | 3    | Falta um programa que o script exige (`details.missing`)  |
+| `CANCELLED`               | 1    | A pessoa respondeu "não" à confirmação                    |
 | `ERROR`                   | 1    | Qualquer outro erro                                       |
 
 ## Descobrir comandos
@@ -109,7 +112,9 @@ Erro (`code` é estável; `hint`, `details` e `stack` são opcionais, o stack s�
       "usage": "vox list-vox [subpasta]",
       "args": [{ "name": "subpasta", "description": "...", "required": false }],
       "risk": "read",
-      "interactive": false
+      "interactive": false,
+      "kind": "builtin",
+      "requires": []
     }
   ]
 }
@@ -120,6 +125,17 @@ Erro (`code` é estável; `hint`, `details` e `stack` são opcionais, o stack s�
 - `risk`: `read` (só lê), `write` (altera algo) ou `destructive` (pode apagar/sobrescrever). Agentes devem
   tratar `write` e `destructive` com cuidado e só passar `--yes` quando a ação for realmente pretendida.
 - `interactive: true` significa que o comando exige terminal (ex.: `menu`); agentes devem ignorá-lo.
+- `kind`: `builtin` (comando da própria CLI) ou `script` (veio de `vox-scripts/`; ver
+  [vox-scripts/README.md](../vox-scripts/README.md)). Scripts também trazem `requires` (programas que
+  precisam estar instalados) e, opcionalmente, `category`.
+
+### Scripts
+
+Um script executa com `vox <nome> [args] --json`: `data` traz `script`, `runtime` (`node`/`bash`/`python`),
+`exitCode`, `durationMs`, `stdout` e `stderr`. Com `--dry-run`, traz o `command` que seria executado e **nada
+roda**. Antes de executar, a CLI confere o sistema (`UNSUPPORTED_OS`), os programas exigidos
+(`MISSING_REQUIREMENT`) e o interpretador (`MISSING_RUNTIME`), todos com código de saída `3`, e, para `write` e
+`destructive`, a confirmação (código `4` sem `--yes`).
 
 ## Sem decoração
 

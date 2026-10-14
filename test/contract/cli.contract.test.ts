@@ -128,8 +128,9 @@ describe('--json: uma linha em stdout, sempre', () => {
         risk: string;
       }[];
     };
+    // Só os de leitura rodam sozinhos; write/destructive pedem --yes (testado logo abaixo).
     const runnable = catalog.commands.filter(
-      (c) => !c.interactive && !c.args.some((a) => a.required),
+      (c) => !c.interactive && !c.args.some((a) => a.required) && c.risk === 'read',
     );
     expect(runnable.map((c) => c.name)).toEqual(
       expect.arrayContaining(['agent-guide', 'list', 'list-vox', 'top-memory']),
@@ -149,6 +150,31 @@ describe('--json: uma linha em stdout, sempre', () => {
       expect(r.stderr, `${command.name}: stderr deve ficar vazio com --json`).toBe('');
       expect([0, 1], `${command.name}: exit code`).toContain(r.status);
       expect(out.ok, command.name).toBe(r.status === 0);
+    }
+  });
+
+  it('comando que altera (write/destructive) NUNCA executa sem --yes: exit 4 e JSON de erro', () => {
+    const catalog = parseJson(vox(['list', '--json'])).data as {
+      commands: {
+        args: { required: boolean }[];
+        interactive: boolean;
+        name: string;
+        risk: string;
+      }[];
+    };
+    const mutating = catalog.commands.filter(
+      (c) => !c.interactive && !c.args.some((a) => a.required) && c.risk !== 'read',
+    );
+
+    for (const command of mutating) {
+      const r = vox([command.name, '--json']);
+
+      expect(r.status, `${command.name} sem --yes`).toBe(4);
+      expect(r.stderr, command.name).toBe('');
+      expect(parseJson(r), command.name).toMatchObject({
+        error: { code: 'CONFIRMATION_REQUIRED' },
+        ok: false,
+      });
     }
   });
 

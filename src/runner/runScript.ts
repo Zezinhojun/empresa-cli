@@ -132,5 +132,12 @@ export async function runScript(options: RunOptions): Promise<ScriptRun> {
     );
   }
 
-  return { command, dryRun: false, durationMs: result.durationMs, exitCode: 0, runtime, ...output };
+  return {
+    command,
+    dryRun: false,
+    durationMs: Math.round(result.durationMs),
+    exitCode: 0,
+    runtime,
+    ...output,
+  };
 }

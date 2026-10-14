@@ -17,6 +17,9 @@ vi.mock('@inquirer/prompts', () => ({
   password: vi.fn(),
   search: vi.fn(),
   select: vi.fn(),
+  Separator: class Separator {
+    constructor(public readonly separator?: string) {}
+  },
 }));
 
 // Mock global para chalk - proxy que retorna a string para qualquer propriedade/função

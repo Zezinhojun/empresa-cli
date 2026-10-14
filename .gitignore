@@ -14,3 +14,6 @@ coverage/
 .vscode/
 .idea/
 .config/
+
+# gerado no build (npm run scripts:index)
+vox-scripts/index.json

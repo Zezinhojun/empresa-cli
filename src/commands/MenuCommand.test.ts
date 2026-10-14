@@ -81,6 +81,52 @@ describe('MenuCommand', () => {
     expect(selectedValues()).toEqual(['cmd1', 'cmd2', '__exit__']); // cmd1, cmd2, Sair
   });
 
+  describe('scripts com categoria e risco', () => {
+    const choices = () => vi.mocked(inquirer.select).mock.calls[0]?.[0].choices ?? [];
+    const names = () => choices().map((c) => (c as { name?: string }).name ?? '');
+    const separators = () =>
+      choices().filter((c) => (c as { separator?: string }).separator !== undefined);
+
+    const script = (name: string, extra: Record<string, unknown> = {}) =>
+      registry.register({ execute: vi.fn(), name, ...extra } as unknown as Command);
+
+    it('agrupa por categoria com separador e ordena dentro de cada grupo', async () => {
+      script('zeta', { category: 'setup' });
+      script('alfa', { category: 'setup' });
+      script('nativo'); // sem categoria -> "geral"
+      vi.mocked(inquirer.select).mockResolvedValueOnce('__exit__');
+
+      await menuCmd.execute();
+
+      expect(separators()).toHaveLength(2);
+      expect(selectedValues().filter(Boolean)).toEqual(['nativo', 'alfa', 'zeta', '__exit__']);
+    });
+
+    it('sem nenhuma categoria não há separadores (menu simples)', async () => {
+      script('a');
+      script('b');
+      vi.mocked(inquirer.select).mockResolvedValueOnce('__exit__');
+
+      await menuCmd.execute();
+
+      expect(separators()).toHaveLength(0);
+    });
+
+    it('avisa em português simples o que o comando faz com o computador', async () => {
+      script('leitura', { risk: 'read' });
+      script('altera', { risk: 'write' });
+      script('apaga', { risk: 'destructive' });
+      vi.mocked(inquirer.select).mockResolvedValueOnce('__exit__');
+
+      await menuCmd.execute();
+
+      const byName = (n: string) => names().find((label) => label.includes(n)) ?? '';
+      expect(byName('leitura')).not.toMatch(/\[/);
+      expect(byName('altera')).toContain('[altera coisas]');
+      expect(byName('apaga')).toContain('[pode apagar dados]');
+    });
+  });
+
   it('sai do loop quando usuário escolhe Sair', async () => {
     const cmd1 = { execute: vi.fn(), name: 'cmd1' };
     registry.register(cmd1 as unknown as Command);
