@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
+import { installHelp } from './hints.js';
 import { findInterpreter } from './interpreters.js';
 import { runScript, type RunOptions } from './runScript.js';
 
@@ -31,7 +32,7 @@ describe('runScript: dependência ausente', () => {
 
       await expect(runScript(options(entry))).rejects.toMatchObject({
         code: 'MISSING_RUNTIME',
-        details: { install: expect.stringMatching(/instal/i), runtime },
+        details: { install: installHelp(runtime), runtime },
         exitCode: 3,
         hint: expect.stringContaining('vox doctor'),
         message: expect.stringContaining(`precisa do ${label}`),
