@@ -4,7 +4,7 @@ import type { Command } from '../core/command/Command.js';
 
 import { CommandRegistry } from '../core/command/CommandRegistry.js';
 import { listDirectory } from '../core/utils/ListDirectory.js';
-import { getVoxPath } from '../vox/directories/VoxHome.js';
+import { getVoxArquiteturaPath } from '../vox/directories/VoxArquitetura.js';
 
 export class ListVoxCommand implements Command {
   public readonly name = 'list-vox';
@@ -12,7 +12,7 @@ export class ListVoxCommand implements Command {
 
   async execute(args: string[] = []) {
     const [subPath = ''] = args;
-    const voxPath = getVoxPath(subPath);
+    const voxPath = getVoxArquiteturaPath(subPath);
 
     const items = await listDirectory(voxPath);
     if (!items) return;
