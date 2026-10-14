@@ -29,6 +29,8 @@ jobs:
         run: npm version "$(node -p "require('./package.json').version")-staging.${{ github.run_number }}" --no-git-tag-version
       - name: Smoke test do pacote instalado
         run: npm run smoke
+      - name: Contrato de uso por agentes (sem TTY, --json, exit codes)
+        run: npm run contract
       - name: Empacota o artefato publicável
         if: matrix.os == 'ubuntu-latest'
         shell: bash

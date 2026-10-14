@@ -14,7 +14,7 @@
 ## Fluxo
 
 1. Crie a branch a partir da `develop` e implemente com testes (cobertura mínima de 80%).
-2. Rode localmente: `npm run typecheck && npm run lint && npm test` (e `npm run smoke` se mexeu em build/pacote).
+2. Rode localmente: `npm run typecheck && npm run lint && npm test` (`npm run smoke` se mexeu em build/pacote e `npm run contract` se mexeu em saída, flags ou exit codes: ele roda o binário como um agente faria, sem terminal).
 3. Abra o PR para a `develop` e aguarde o CI.
 4. Para lançar: veja [docs/RELEASING.md](docs/RELEASING.md).
 
