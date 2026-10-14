@@ -9,6 +9,7 @@ const EXIT = '__exit__';
 
 export class MenuCommand implements Command {
   public readonly args = [];
+  public readonly interactive = true;
   public readonly name = 'menu';
   public readonly description = 'Exibe um menu interativo com os comandos disponíveis';
 

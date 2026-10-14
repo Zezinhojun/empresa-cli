@@ -4,8 +4,8 @@
  * temporário → executa a CLI instalada. Falha (exit 1) se algo quebrar.
  * Uso: npm run smoke
  */
-import { execFileSync, execSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { execSync, spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -37,8 +37,22 @@ try {
   const entry = join(work, 'node_modules', pkg.name, pkg.bin.vox);
   assert(readFileSync(entry, 'utf8').startsWith('#!/usr/bin/env node'), 'bin tem shebang');
 
-  const vox = (...args) =>
-    execFileSync(process.execPath, [entry, ...args], { cwd: work, encoding: 'utf8' });
+  // HOME isolado com uma pasta ~/vox/arquitetura de teste (nas máquinas de CI ela não existe)
+  const home = join(work, 'home');
+  mkdirSync(join(home, 'vox', 'arquitetura', 'servicos'), { recursive: true });
+  writeFileSync(join(home, 'vox', 'arquitetura', 'leia-me.txt'), 'oi');
+  const env = { ...process.env, HOME: home, USERPROFILE: home };
+  delete env.CI; // o smoke simula uma pessoa/agente; CI=true só desliga prompts
+
+  // sem terminal (stdin/stdout em pipe), exatamente como um agente chamaria
+  const exec = (...args) =>
+    spawnSync(process.execPath, [entry, ...args], { cwd: work, encoding: 'utf8', env });
+  const vox = (...args) => {
+    const r = exec(...args);
+    if (r.status !== 0) throw new Error(`vox ${args.join(' ')} saiu com ${r.status}: ${r.stderr}`);
+    return r.stdout;
+  };
+  const json = (...args) => JSON.parse(vox(...args, '--json')); // falha se stdout tiver algo além do JSON
 
   assert(vox('--version').trim() === pkg.version, `vox --version === ${pkg.version}`);
   const help = vox('--help');
@@ -46,18 +60,13 @@ try {
     ['menu', 'list-vox', 'top-memory'].every((c) => help.includes(c)),
     'vox --help lista todos os comandos',
   );
-  vox('list-vox');
-  assert(true, 'vox list-vox executa sem erro');
+  assert(
+    vox('list-vox').includes('servicos/'),
+    'vox list-vox lista a pasta (texto simples fora de TTY)',
+  );
   assert(/MB|WS/.test(vox('top-memory')), 'vox top-memory lista processos (ps/powershell reais)');
 
-  const exitCode = (...args) => {
-    try {
-      vox(...args);
-      return 0;
-    } catch (e) {
-      return e.status;
-    }
-  };
+  const exitCode = (...args) => exec(...args).status;
   assert(exitCode('comando-que-nao-existe') === 2, 'comando inexistente sai com código 2');
   assert(exitCode('list-vox', '--opcao-inexistente') === 2, 'opção desconhecida sai com código 2');
   assert(
@@ -65,7 +74,6 @@ try {
     'vox <cmd> --help mostra o uso',
   );
 
-  // o smoke roda sem terminal (stdin/stdout em pipe), exatamente como um agente chamaria
   const semArgs = vox();
   assert(
     semArgs.includes('Comandos:') &&
@@ -74,6 +82,49 @@ try {
     'vox sem argumentos e sem terminal mostra a ajuda (não abre menu, sem ANSI)',
   );
   assert(exitCode('menu') === 2, 'vox menu sem terminal recusa com código 2');
+
+  // --- contrato JSON (docs/cli-contract.md) ---
+  const lv = json('list-vox');
+  assert(
+    lv.ok === true &&
+      lv.schemaVersion === 1 &&
+      lv.command === 'list-vox' &&
+      JSON.stringify(lv.data.items) ===
+        JSON.stringify([
+          { name: 'leia-me.txt', type: 'file' },
+          { name: 'servicos', type: 'dir' },
+        ]),
+    'list-vox --json: stdout só com o envelope JSON e os dados corretos',
+  );
+  const cat = json('list');
+  assert(
+    ['list', 'list-vox', 'menu', 'top-memory'].every((n) =>
+      cat.data.commands.some((c) => c.name === n),
+    ) && cat.data.commands.every((c) => ['read', 'write', 'destructive'].includes(c.risk)),
+    'vox list --json: catálogo com todos os comandos e o risco de cada um',
+  );
+  assert(
+    json().data.commands.length === cat.data.commands.length,
+    'vox --json sem args devolve o catálogo',
+  );
+  const mem = json('top-memory').data.processes;
+  assert(
+    mem.length > 0 && typeof mem[0].pid === 'number' && typeof mem[0].memoryMb === 'number',
+    'top-memory --json: processos com pid e memoryMb numéricos',
+  );
+
+  const ausente = exec('list-vox', 'nao-existe', '--json');
+  assert(
+    ausente.status === 1 &&
+      ausente.stderr === '' &&
+      JSON.parse(ausente.stdout).error.code === 'NOT_FOUND',
+    'erro com --json: exit 1, JSON de erro em stdout e stderr vazio',
+  );
+  const fora = exec('list-vox', '../..', '--json');
+  assert(
+    fora.status === 2 && JSON.parse(fora.stdout).error.code === 'PATH_OUTSIDE_BASE',
+    'list-vox não sai de ~/vox/arquitetura (../.. recusado, exit 2)',
+  );
   console.log('\nSMOKE OK');
 } catch (error) {
   console.error(`\n${error.message}`);

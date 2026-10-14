@@ -3,8 +3,10 @@ import chalk from 'chalk';
 import '../commands/index.js';
 import pkg from '../../package.json' with { type: 'json' };
 import { CommandExecutor, CommandRegistry, type Command } from '../core/command/index.js';
+import { buildCatalog, describeCommand } from './catalog.js';
 import { CliError, ExitCode } from './errors.js';
 import { printCommandHelp, printHelp, usage } from './help.js';
+import { emitData } from './output.js';
 import { parseArgv } from './parseArgv.js';
 import { resolveRuntime, setRuntime } from './runtime.js';
 
@@ -29,6 +31,14 @@ export async function bootstrap(argv: string[] = process.argv.slice(2)) {
   const { args, command: name, flags, unknown } = parseArgv(argv);
   const runtime = resolveRuntime(flags);
   setRuntime(runtime);
+  if (runtime.plain) chalk.level = 0;
+
+  /** Ajuda para pessoas, ou o catálogo/descrição do comando em JSON. */
+  const showHelp = (command?: Command) => {
+    if (runtime.json) emitData('help', command ? describeCommand(command) : buildCatalog(registry));
+    else if (command) printCommandHelp(command);
+    else printHelp(registry);
+  };
 
   if (unknown.length > 0) {
     throw new CliError(
@@ -40,7 +50,8 @@ export async function bootstrap(argv: string[] = process.argv.slice(2)) {
   }
 
   if (flags.version) {
-    console.log(pkg.version);
+    if (runtime.json) emitData('version', { version: pkg.version });
+    else console.log(pkg.version);
     return;
   }
 
@@ -55,15 +66,14 @@ export async function bootstrap(argv: string[] = process.argv.slice(2)) {
   }
 
   if (flags.help) {
-    if (command) printCommandHelp(command);
-    else printHelp(registry);
+    showHelp(command);
     return;
   }
 
   if (!command) {
     // Sem terminal interativo (agente, CI, pipe) o menu nunca abre: mostra a ajuda.
     if (!runtime.interactive) {
-      printHelp(registry);
+      showHelp();
       return;
     }
     console.log(chalk.bold('VOX CLI inicializada'));

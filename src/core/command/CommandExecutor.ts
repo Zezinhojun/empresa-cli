@@ -1,5 +1,7 @@
 import type { CommandRegistry } from './CommandRegistry.js';
 
+import { printResult } from '../../cli/output.js';
+
 export class CommandExecutor {
   constructor(private readonly registry: CommandRegistry) {}
 
@@ -12,7 +14,7 @@ export class CommandExecutor {
       return false;
     }
 
-    await command.execute(args);
+    printResult(command, await command.execute(args));
     return true;
   }
 }
