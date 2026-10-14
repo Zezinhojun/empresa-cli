@@ -28,13 +28,28 @@ vox --help             # lista comandos e opções
 vox --version
 ```
 
-| Comando      | O que faz                                                                              |
-| ------------ | -------------------------------------------------------------------------------------- |
-| `menu`       | Menu interativo com os comandos disponíveis (com opção "Sair")                         |
-| `list-vox`   | Lista o conteúdo de `~/vox/arquitetura` (aceita uma subpasta: `vox list-vox services`) |
-| `top-memory` | Lista os 10 processos que mais consomem memória (PowerShell / `ps`)                    |
+| Comando       | O que faz                                                                              |
+| ------------- | -------------------------------------------------------------------------------------- |
+| `menu`        | Menu interativo com os comandos disponíveis (com opção "Sair")                         |
+| `list-vox`    | Lista o conteúdo de `~/vox/arquitetura` (aceita uma subpasta: `vox list-vox services`) |
+| `top-memory`  | Lista os 10 processos que mais consomem memória (PowerShell / `ps`)                    |
+| `list`        | Lista os comandos (`--json`: catálogo com argumentos e risco)                          |
+| `agent-guide` | Guia de uso para agentes de IA (`--json`: guia + contrato + catálogo)                  |
 
 Comando inexistente imprime uma dica e sai com código `1`.
+
+## Uso por agentes de IA (Claude Code, Codex etc.)
+
+A `vox` foi desenhada para ser chamada também por agentes, como subprocesso:
+
+- `vox agent-guide` (ou `--json`) imprime o guia e o catálogo de comandos — o agente aprende a usar a CLI sem ver este repositório.
+- `vox list --json` descobre os comandos, os argumentos e o **risco** de cada um (`read`, `write`, `destructive`).
+- Com `--json`, `stdout` tem **uma linha de JSON** e nada mais; erros também (`ok: false`, `error.code`), com `stderr` vazio.
+- Sem terminal, a CLI **nunca abre prompt nem menu**: pedidos de confirmação falham com código `4` até receberem `--yes`.
+- Códigos de saída estáveis: `0` ok · `1` erro · `2` uso inválido · `3` dependência ausente · `4` confirmação · `130` interrompido.
+
+Contrato completo em [docs/cli-contract.md](docs/cli-contract.md) e guia rápido em [docs/agent-guide.md](docs/agent-guide.md)
+(inclui um trecho pronto para colar no `CLAUDE.md`/`AGENTS.md` do seu projeto).
 
 ## Desenvolvimento
 
