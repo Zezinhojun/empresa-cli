@@ -5,9 +5,11 @@ os usuários** da `vox`, às vezes **sem ninguém olhando** (agentes de IA). É 
 projeto. Este documento diz do que o runner protege, do que **não** protege, e o que revisar antes de aceitar
 um script. Decisão de origem dos scripts: [ADR 0002](../adr/0002-scripts-empacotados.md).
 
-> **Status da revisão:** os controles abaixo estão implementados e testados (issue #46). A **aprovação humana
-> desta revisão é pré-requisito para o primeiro script real** entrar em `vox-scripts/`: ver
-> [Pendências](#pendências).
+> **Status da revisão:** os controles abaixo estão implementados e testados (issue #46) e a revisão foi
+> **aprovada pelo dono do repositório (Junior Silva) em 2026-10-14**, com os limites da seção
+> [Limitações](#limitações-e-riscos-que-permanecem) aceitos. Com isso, o **primeiro script real pode entrar** em
+> `vox-scripts/`, **desde que cada script passe pelo checklist** [abaixo](#checklist-de-revisão-de-um-script-para-quem-aprova-o-pr).
+> A aprovação cobre o **runner e os controles**, não os scripts futuros: cada script é revisado no seu PR.
 
 ## O que protegemos
 
@@ -103,7 +105,6 @@ um script. Decisão de origem dos scripts: [ADR 0002](../adr/0002-scripts-empaco
 
 ## Pendências
 
-- [ ] **Aprovação humana desta revisão de segurança** (responsável a definir) antes de aceitar o primeiro script
-      real em `vox-scripts/`.
-- [ ] Habilitar _private vulnerability reporting_ no GitHub (ver [SECURITY.md](../../SECURITY.md)).
+- [x] **Aprovação humana desta revisão de segurança:** dada pelo dono do repositório em 2026-10-14.
+- [x] _Private vulnerability reporting_ habilitado no GitHub (ver [SECURITY.md](../../SECURITY.md)).
 - [ ] Decidir se `destructive` deve, no futuro, exigir confirmação humana mesmo com `--yes` (hoje `--yes` basta).

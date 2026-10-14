@@ -6,8 +6,9 @@ então passam por PR, revisão e CI como qualquer outro código (decisão em
 `.py` ou `.js`: a `vox` descobre como executar.
 
 > **Segurança:** scripts são código executado na máquina de todos. Leia o
-> [modelo de ameaças](../docs/security/runner.md) e use o checklist de revisão dele. O **primeiro script real
-> só entra depois da aprovação humana dessa revisão** (pendência registrada no documento).
+> [modelo de ameaças](../docs/security/runner.md) e use o checklist de revisão dele. A revisão de segurança do
+> **runner** foi aprovada pelo dono do repositório (2026-10-14); **cada script novo** ainda precisa passar
+> pelo checklist no próprio PR (o template de PR já traz os itens).
 
 ## Como criar um script
 
