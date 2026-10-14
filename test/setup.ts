@@ -33,16 +33,6 @@ vi.mock('chalk', () => {
   return { default: mock, ...mock };
 });
 
-// Mock global para ora (spinner)
-vi.mock('ora', () => ({
-  default: vi.fn(() => ({
-    fail: vi.fn().mockReturnThis(),
-    start: vi.fn().mockReturnThis(),
-    stop: vi.fn().mockReturnThis(),
-    succeed: vi.fn().mockReturnThis(),
-  })),
-}));
-
 // Limpeza automática entre testes
 beforeEach(() => {
   vi.clearAllMocks();
