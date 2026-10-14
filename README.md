@@ -1,56 +1,70 @@
 # VOX CLI
 
-CLI interna da empresa para automação de tarefas operacionais de desenvolvimento.
+CLI da Vox Tecnologia para centralizar e padronizar tarefas operacionais de desenvolvimento
+(deploy, docker, setup de ambiente, banco de dados, configuração de projetos) num único ponto,
+em vez de scripts dispersos.
 
----
+> **Status:** pré-1.0 em construção. O pacote ainda não foi publicado no npm; veja
+> [docs/RELEASING.md](docs/RELEASING.md) para o processo de publicação.
 
-## 🎯 Objetivo
+## Requisitos
 
-Centralizar e padronizar scripts operacionais da empresa como:
+- Node.js **20 a 24** (LTS)
+- Windows, Linux ou macOS (testado no CI nos três)
 
-- deploy de aplicações
-- execução de docker
-- setup de ambientes
-- automação de banco de dados
-- configuração de projetos (ex: WordPress, APIs, etc.)
+## Instalação
 
-O objetivo é reduzir scripts dispersos e padronizar execuções em um único ponto.
+```bash
+npm install -g cli-vox          # produção (dist-tag latest)
+npm install -g cli-vox@staging  # pré-release para validação
+```
 
----
+## Uso
 
-## ⚙️ Stack
+```bash
+vox                    # menu interativo
+vox <comando> [args]   # executa um comando direto
+vox --help             # lista comandos e opções
+vox --version
+```
 
-- Node.js >= 20 (LTS)
-- TypeScript
-- ESM (NodeNext)
-- Commander (CLI routing)
-- Inquirer (menu interativo)
-- Execa (execução de comandos)
-- Tsup (build)
+| Comando      | O que faz                                                                              |
+| ------------ | -------------------------------------------------------------------------------------- |
+| `menu`       | Menu interativo com os comandos disponíveis (com opção "Sair")                         |
+| `list-vox`   | Lista o conteúdo de `~/vox/arquitetura` (aceita uma subpasta: `vox list-vox services`) |
+| `top-memory` | Lista os 10 processos que mais consomem memória (PowerShell / `ps`)                    |
 
----
+Comando inexistente imprime uma dica e sai com código `1`.
 
-## 🧪 Status atual
+## Desenvolvimento
 
-MVP inicial em construção.
+```bash
+npm ci
+npm run dev -- --help   # roda direto do TypeScript (tsx)
+```
 
-Estrutura base do projeto e configuração de ambiente definidas.
+| Script              | Função                                                                  |
+| ------------------- | ----------------------------------------------------------------------- |
+| `npm run build`     | Gera `dist/index.js` (tsup, ESM, com shebang)                           |
+| `npm test`          | Testes (vitest). `test:coverage` / `test:ci` geram cobertura (mín. 80%) |
+| `npm run typecheck` | `tsc --noEmit`                                                          |
+| `npm run lint`      | ESLint (`lint:fix` corrige)                                             |
+| `npm run smoke`     | Build → `npm pack` → instala o tarball → executa a CLI instalada        |
 
----
+Para adicionar um comando: crie `src/commands/XCommand.ts` implementando `Command`
+(`src/core/command/Command.ts`), registre-o no fim do arquivo com
+`CommandRegistry.getInstance().register(...)` e importe-o em `src/commands/index.ts`.
+O teste `src/commands/index.test.ts` lista os comandos esperados.
 
-## 🚀 Próximos passos
+Stack: TypeScript (ESM / NodeNext), [@inquirer/prompts](https://github.com/SBoudrias/Inquirer.js),
+chalk, execa, tsup, vitest.
 
-- implementação do TaskRunner
-- sistema de tasks automatizado
-- menu interativo (`vox menu`)
-- sistema de update (`vox update`)
-- registry automático de tasks
+## Contribuindo e releases
 
----
+- Fluxo de branches, commits e PRs: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Publicação (staging → produção), validação e rollback: [docs/RELEASING.md](docs/RELEASING.md)
+- Decisões de arquitetura: [docs/adr/](docs/adr/)
 
-## 📦 Ideia futura
+## Licença
 
-- sistema de plugins internos
-- versionamento de tasks
-- permissões por usuário/equipe
-- integração com CI/CD da empresa
+[MIT](LICENSE)
