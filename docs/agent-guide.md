@@ -12,7 +12,9 @@ Este é o resumo do que o agente precisa saber. O contrato completo vem logo aba
 3. **Confira `ok`.** Se `false`, leia `error.code` (estável) e `error.hint` (o que fazer). O erro também
    sai em `stdout`; `stderr` fica vazio.
 4. **Use o código de saída:** `0` ok · `1` erro · `2` uso inválido (corrija comando/argumentos) ·
-   `3` dependência ausente (veja `error.hint`) · `4` pede confirmação · `130` interrompido.
+   `3` dependência ausente · `4` pede confirmação · `130` interrompido. No código `3`
+   (`MISSING_RUNTIME`), rode `vox doctor --json`: `data.checks[]` diz o que falta e `install` explica
+   como instalar; **repasse isso ao usuário** em vez de tentar instalar por conta própria.
 5. **Respeite o `risk`:** `read` pode rodar livremente. Para `write` e `destructive`, só execute se o usuário
    pediu aquela ação. Passe `--yes` **apenas** nesse caso: sem ele, um comando que pede confirmação falha
    com código `4` em vez de ficar esperando.
@@ -27,6 +29,7 @@ vox list --json                    # o que existe?
 vox list-vox --json                # lista ~/vox/arquitetura
 vox list-vox services --json       # subpasta
 vox top-memory --json              # 10 processos que mais usam memória
+vox doctor --json                  # o que este computador tem (Node, Bash, Python)
 vox <comando> --help --json        # detalhes de um comando
 ```
 

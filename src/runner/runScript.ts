@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 
 import { CliError, ExitCode } from '../cli/errors.js';
+import { installHelp, RUNTIME_LABEL } from './hints.js';
 import { findInterpreter, runtimeOf, type Runtime } from './interpreters.js';
 
 export interface RunOptions {
@@ -34,12 +35,6 @@ export interface ScriptRun {
   stdout?: string;
 }
 
-const RUNTIME_LABEL: Record<Runtime, string> = {
-  bash: 'o Bash',
-  node: 'o Node.js',
-  python: 'o Python 3',
-};
-
 const DEFAULT_MAX_OUTPUT = 1_000_000;
 
 export async function runScript(options: RunOptions): Promise<ScriptRun> {
@@ -55,12 +50,13 @@ export async function runScript(options: RunOptions): Promise<ScriptRun> {
 
   const interpreter = await findInterpreter(runtime);
   if (!interpreter) {
+    const install = installHelp(runtime);
     throw new CliError(
-      `Não encontrei ${RUNTIME_LABEL[runtime]} neste computador, e o script '${options.name}' precisa dele.`,
+      `O comando '${options.name}' precisa do ${RUNTIME_LABEL[runtime]}, que não está instalado neste computador.`,
       ExitCode.missingDependency,
       'MISSING_RUNTIME',
-      `Instale ${RUNTIME_LABEL[runtime]} e tente de novo.`,
-      { runtime },
+      `${install} Para conferir o que falta: vox doctor`,
+      { install, runtime },
     );
   }
 

@@ -10,6 +10,6 @@ describe('commands/index', () => {
       .map((command) => command.name)
       .sort();
 
-    expect(names).toEqual(['agent-guide', 'list', 'list-vox', 'menu', 'top-memory']);
+    expect(names).toEqual(['agent-guide', 'doctor', 'list', 'list-vox', 'menu', 'top-memory']);
   });
 });

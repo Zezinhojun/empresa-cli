@@ -35,6 +35,7 @@ vox --version
 | `top-memory`  | Lista os 10 processos que mais consomem memória (PowerShell / `ps`)                    |
 | `list`        | Lista os comandos (`--json`: catálogo com argumentos e risco)                          |
 | `agent-guide` | Guia de uso para agentes de IA (`--json`: guia + contrato + catálogo)                  |
+| `doctor`      | Confere se o computador tem Node, Bash e Python e ensina a instalar o que faltar       |
 
 Comando inexistente imprime uma dica e sai com código `2`.
 
