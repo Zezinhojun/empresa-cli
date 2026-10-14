@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync, existsSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -109,7 +109,8 @@ describe('runScript (.js)', () => {
 
     const result = await run(entry, { cwd: path.join(dir, 'sub') });
 
-    expect(path.resolve(result.stdout ?? '')).toBe(path.resolve(path.join(dir, 'sub')));
+    // macOS: /var é link para /private/var e o cwd do processo vem resolvido
+    expect(realpathSync(result.stdout ?? '')).toBe(realpathSync(path.join(dir, 'sub')));
   });
 
   it('stdin não interativo: o script não fica esperando (recebe EOF)', async () => {
