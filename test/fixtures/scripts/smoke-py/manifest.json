@@ -1,0 +1,1 @@
+{"name":"smoke-py","description":"Script de teste do smoke (run.py)","entry":"run.py","risk":"read","category":"smoke","args":[{"name":"texto","description":"Texto a ecoar","required":true},{"name":"extra","description":"Mais um argumento (opcional)"}]}

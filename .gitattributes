@@ -1,0 +1,14 @@
+# Fim de linha LF onde CRLF QUEBRA a execução:
+#  - .sh com CRLF falha no Linux/macOS ("bad interpreter: /bin/bash^M")
+#  - hooks do husky são executados pelo sh do Git
+#  - scripts empacotados têm hash no build: o conteúdo precisa ser idêntico em qualquer checkout
+*.sh text eol=lf
+*.py text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+.husky/* text eol=lf
+vox-scripts/** text eol=lf
+test/fixtures/** text eol=lf
+
+# O resto: o Git normaliza para LF no repositório
+* text=auto

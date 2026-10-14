@@ -56,6 +56,10 @@ Campos que não existem nesta tabela são **rejeitados** (assim um erro de digit
 | Quem tem Bash (macOS/Linux; Windows com Git) | `.sh` — declare `os`/`requires` se depender de algo específico    |
 | Quem tem Python 3                            | `.py` — idem                                                      |
 
+**Atenção com `.js`:** dentro do pacote ele é **ESM** (`"type": "module"`): use `import`, não `require`. Para
+CommonJS use a extensão `.cjs`. Scripts `.sh` precisam de fim de linha **LF** (o `.gitattributes` já garante
+isso no checkout; com CRLF o Bash falha no Linux/macOS).
+
 No Windows não há Bash nem Python por padrão. Se faltar, a CLI **não executa** e explica o que instalar
 (`vox doctor` mostra a situação do computador).
 
