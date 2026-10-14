@@ -36,7 +36,7 @@ vox --version
 | `list`        | Lista os comandos (`--json`: catálogo com argumentos e risco)                          |
 | `agent-guide` | Guia de uso para agentes de IA (`--json`: guia + contrato + catálogo)                  |
 
-Comando inexistente imprime uma dica e sai com código `1`.
+Comando inexistente imprime uma dica e sai com código `2`.
 
 ## Uso por agentes de IA (Claude Code, Codex etc.)
 
