@@ -2,44 +2,67 @@ import chalk from 'chalk';
 
 import '../commands/index.js';
 import pkg from '../../package.json' with { type: 'json' };
-import { CommandExecutor, CommandRegistry } from '../core/command/index.js';
+import { CommandExecutor, CommandRegistry, type Command } from '../core/command/index.js';
+import { CliError, ExitCode } from './errors.js';
+import { printCommandHelp, printHelp, usage } from './help.js';
+import { parseArgv } from './parseArgv.js';
 
-const VERSION_FLAGS = ['--version', '-v'];
-const HELP_FLAGS = ['--help', '-h', 'help'];
+const HELP_HINT = "Use 'vox --help' para ver os comandos disponíveis.";
 
-function printHelp(registry: CommandRegistry) {
-  console.log(`${chalk.bold('vox')} ${pkg.version}\n`);
-  console.log('Uso: vox [comando] [argumentos]\n');
-  console.log('Comandos:');
-  for (const { description = '', name } of registry.list()) {
-    console.log(`  ${chalk.cyan(name.padEnd(14))}${description}`);
+function checkArgs(command: Command, args: string[]) {
+  if (!command.args) return;
+  const required = command.args.filter((a) => a.required).length;
+  if (args.length < required || args.length > command.args.length) {
+    throw new CliError(
+      `Argumentos inválidos para '${command.name}'. Uso: ${usage(command)}`,
+      ExitCode.usage,
+      'INVALID_ARGUMENTS',
+      `Veja 'vox ${command.name} --help'.`,
+    );
   }
-  console.log('\nOpções:\n  -h, --help     Mostra esta ajuda\n  -v, --version  Mostra a versão');
 }
 
 export async function bootstrap(argv: string[] = process.argv.slice(2)) {
   const registry = CommandRegistry.getInstance();
   const executor = new CommandExecutor(registry);
-  const [cmd, ...args] = argv;
+  const { args, command: name, flags, unknown } = parseArgv(argv);
 
-  if (cmd && VERSION_FLAGS.includes(cmd)) {
+  if (unknown.length > 0) {
+    throw new CliError(
+      `Opção desconhecida: ${unknown[0]}`,
+      ExitCode.usage,
+      'UNKNOWN_OPTION',
+      HELP_HINT,
+    );
+  }
+
+  if (flags.version) {
     console.log(pkg.version);
     return;
   }
 
-  if (cmd && HELP_FLAGS.includes(cmd)) {
-    printHelp(registry);
+  const command = name ? registry.get(name) : undefined;
+  if (name && !command) {
+    throw new CliError(
+      `Comando ${name} não encontrado`,
+      ExitCode.usage,
+      'UNKNOWN_COMMAND',
+      HELP_HINT,
+    );
+  }
+
+  if (flags.help) {
+    if (command) printCommandHelp(command);
+    else printHelp(registry);
     return;
   }
 
-  if (!cmd) {
-    console.log('VOX CLI inicializada');
+  if (!command) {
+    console.log(chalk.bold('VOX CLI inicializada'));
     await executor.execute('menu');
     return;
   }
 
-  if (!(await executor.execute(cmd, args))) {
-    console.log("Use 'vox --help' para ver os comandos disponíveis.");
-    process.exitCode = 1;
-  }
+  checkArgs(command, args);
+  await executor.execute(command.name, args);
 }
