@@ -37,9 +37,10 @@ try {
 
   assert(vox('--version').trim() === pkg.version, `vox --version === ${pkg.version}`);
   const help = vox('--help');
-  assert(['menu', 'list-vox', 'clean-memory'].every((c) => help.includes(c)), 'vox --help lista todos os comandos');
+  assert(['menu', 'list-vox', 'top-memory'].every((c) => help.includes(c)), 'vox --help lista todos os comandos');
   vox('list-vox');
   assert(true, 'vox list-vox executa sem erro');
+  assert(/MB|WS/.test(vox('top-memory')), 'vox top-memory lista processos (ps/powershell reais)');
 
   let code = 0;
   try {
