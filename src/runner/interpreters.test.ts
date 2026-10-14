@@ -50,6 +50,7 @@ describe('findInterpreter', () => {
       args: [],
       command: process.execPath,
       runtime: 'node',
+      version: process.version,
     });
     expect(execa).not.toHaveBeenCalled();
   });
@@ -84,6 +85,7 @@ describe('findInterpreter', () => {
         args: ['-3'],
         command: 'py',
         runtime: 'python',
+        version: 'Python 3.12.6',
       });
       expect(execa).toHaveBeenCalledWith('py', ['-3', '--version'], expect.any(Object));
     });
@@ -109,7 +111,14 @@ describe('findInterpreter', () => {
         args: [],
         command: 'bash',
         runtime: 'bash',
+        version: 'GNU bash, version 5.2',
       });
+    });
+
+    it('guarda a primeira linha não vazia da versão (Python 2 imprime em stderr, o Git Bash em stdout)', async () => {
+      fakeSystem({ python3: reply(0, '\n\nPython 3.12.6\nmais uma linha') });
+
+      await expect(findInterpreter('python')).resolves.toMatchObject({ version: 'Python 3.12.6' });
     });
 
     it('Windows: só o Git Bash; NUNCA o `bash` do PATH (launcher do WSL)', async () => {

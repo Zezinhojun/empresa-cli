@@ -9,6 +9,8 @@ export interface Interpreter {
   args: string[];
   command: string;
   runtime: Runtime;
+  /** Primeira linha da resposta de `--version` (ex.: "Python 3.12.6"). */
+  version: string;
 }
 
 const BY_EXTENSION: Record<string, Runtime> = {
@@ -67,22 +69,27 @@ const PROBE: Partial<Record<Runtime, RegExp>> = {
 };
 
 /**
- * Só vale o que **funciona**: executa `--version`. Isso descarta o atalho vazio da Microsoft Store
- * (`python3` que só abre a loja) e Python 2.
+ * Só vale o que **funciona**: executa `--version` e devolve a primeira linha da resposta. Isso
+ * descarta o atalho vazio da Microsoft Store (`python3` que só abre a loja) e Python 2.
  */
-async function works(candidate: Candidate, runtime: Runtime): Promise<boolean> {
+async function probe(candidate: Candidate, runtime: Runtime): Promise<string | undefined> {
   try {
     const result = await execa(candidate.command, [...candidate.args, '--version'], {
       reject: false,
       stdin: 'ignore',
       timeout: 5000,
     });
+    const text = `${result.stdout}\n${result.stderr}`;
     const expected = PROBE[runtime];
+    if (result.exitCode !== 0 || (expected && !expected.test(text))) return undefined;
     return (
-      result.exitCode === 0 && (!expected || expected.test(`${result.stdout}\n${result.stderr}`))
+      text
+        .split(/\r?\n/)
+        .find((line) => line.trim() !== '')
+        ?.trim() ?? ''
     );
   } catch {
-    return false;
+    return undefined;
   }
 }
 
@@ -103,7 +110,9 @@ export function findInterpreter(
 
   const search = (async () => {
     for (const candidate of candidatesFor(runtime, platform, env)) {
-      if (runtime === 'node' || (await works(candidate, runtime))) return { ...candidate, runtime };
+      if (runtime === 'node') return { ...candidate, runtime, version: process.version };
+      const version = await probe(candidate, runtime);
+      if (version !== undefined) return { ...candidate, runtime, version };
     }
     return undefined;
   })();

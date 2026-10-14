@@ -123,6 +123,17 @@ try {
     'agent-guide --json: guia + contrato + catálogo numa só chamada',
   );
 
+  const doctor = json('doctor').data;
+  assert(
+    ['node', 'bash', 'python'].every((r) => doctor.checks.some((c) => c.runtime === r)) &&
+      doctor.checks.find((c) => c.runtime === 'node').ok,
+    'vox doctor --json: confere Node, Bash e Python (o Node sempre ok)',
+  );
+  assert(
+    vox('doctor').includes('Verificando este computador'),
+    'vox doctor imprime o diagnóstico em texto simples',
+  );
+
   const ausente = exec('list-vox', 'nao-existe', '--json');
   assert(
     ausente.status === 1 &&

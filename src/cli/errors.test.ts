@@ -47,6 +47,82 @@ describe('reportError', () => {
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('texto'));
   });
 
+  describe('erros do sistema viram frases claras', () => {
+    const sys = (code: string, path?: string) =>
+      Object.assign(new Error(`${code}: mensagem técnica do Node`), {
+        code,
+        ...(path && { path }),
+      });
+    const printed = () => errorSpy.mock.calls.flat().join('\n');
+
+    it.each([
+      ['EACCES', 'Sem permissão para acessar o arquivo ou pasta: /x/y'],
+      ['EPERM', 'Sem permissão para acessar o arquivo ou pasta: /x/y'],
+      ['ENOENT', 'Arquivo ou pasta não encontrado: /x/y'],
+    ])('%s com caminho', (code, frase) => {
+      expect(reportError(sys(code, '/x/y'))).toBe(1);
+      expect(printed()).toContain(frase);
+      expect(printed()).not.toMatch(/mensagem técnica|EACCES|EPERM|ENOENT/);
+    });
+
+    it('sem caminho a frase continua boa (sem ": undefined")', () => {
+      reportError(sys('ENOENT'));
+
+      expect(printed()).toContain('Arquivo ou pasta não encontrado');
+      expect(printed()).not.toContain('undefined');
+    });
+
+    it('ENOSPC: disco cheio, com dica', () => {
+      reportError(sys('ENOSPC'));
+
+      expect(printed()).toContain('Não há espaço livre no disco');
+      expect(printed()).toContain('Libere espaço');
+    });
+
+    it('código desconhecido mantém a mensagem original', () => {
+      reportError(sys('EXYZ'));
+
+      expect(printed()).toContain('mensagem técnica do Node');
+    });
+
+    it('--verbose mantém o stack para quem precisa depurar', () => {
+      reportError(sys('EACCES', '/x'), true);
+
+      expect(printed()).toContain('mensagem técnica do Node');
+    });
+
+    it('um CliError não é "traduzido" por cima: a mensagem dele manda', () => {
+      reportError(Object.assign(new CliError('minha mensagem'), { code: 'EACCES' }));
+
+      expect(printed()).toContain('minha mensagem');
+    });
+
+    it('com --json: code estável e hint, sem texto técnico', () => {
+      const writes: string[] = [];
+      vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
+        writes.push(String(chunk));
+        return true;
+      });
+      setRuntime({
+        dryRun: false,
+        interactive: false,
+        json: true,
+        plain: true,
+        verbose: false,
+        yes: false,
+      });
+
+      reportError(sys('EACCES', '/x'));
+      resetRuntime();
+
+      expect(JSON.parse(writes.join(''))).toMatchObject({
+        error: { code: 'PERMISSION_DENIED', hint: expect.stringContaining('permiss') },
+        ok: false,
+      });
+      expect(writes.join('')).not.toContain('mensagem técnica');
+    });
+  });
+
   describe('com --json', () => {
     let writes: string[];
     const json = () =>
