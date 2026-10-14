@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { CommandRegistry } from '../core/command/CommandRegistry.js';
 import './index.js';
@@ -10,6 +10,6 @@ describe('commands/index', () => {
       .map((command) => command.name)
       .sort();
 
-    expect(names).toEqual(['clean-memory', 'list-vox', 'menu']);
+    expect(names).toEqual(['list-vox', 'menu', 'top-memory']);
   });
 });
