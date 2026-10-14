@@ -52,4 +52,14 @@ describe('CommandExecutor', () => {
 
     await expect(executor.execute('fails')).rejects.toThrow('Command failed');
   });
+
+  it('imprime os dados devolvidos pelo comando (formato humano)', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    registry.register({ execute: () => 'resultado', name: 'dados' });
+
+    await executor.execute('dados');
+
+    expect(logSpy).toHaveBeenCalledWith('resultado');
+    logSpy.mockRestore();
+  });
 });

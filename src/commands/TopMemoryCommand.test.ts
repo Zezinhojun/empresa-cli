@@ -2,7 +2,7 @@ import * as execaModule from 'execa';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CommandRegistry } from '../core/command/CommandRegistry.js';
-import { parsePs, TopMemoryCommand } from './TopMemoryCommand.js';
+import { parsePs, parseWindows, TopMemoryCommand } from './TopMemoryCommand.js';
 
 vi.mock('execa');
 
@@ -14,21 +14,17 @@ const setPlatform = (value: string) =>
 
 describe('TopMemoryCommand', () => {
   let cmd: TopMemoryCommand;
-  let logSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     (CommandRegistry as unknown as { instance?: CommandRegistry | undefined }).instance = undefined;
     CommandRegistry.getInstance();
     cmd = new TopMemoryCommand();
     vi.mocked(execaModule.execa).mockReset();
-    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    process.exitCode = undefined;
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
     setPlatform(originalPlatform);
-    process.exitCode = undefined;
   });
 
   it('tem nome e descrição corretos', () => {
@@ -36,38 +32,50 @@ describe('TopMemoryCommand', () => {
     expect(cmd.description).toContain('memória');
   });
 
-  it('usa PowerShell no Windows', async () => {
+  it('Windows: PowerShell com ConvertTo-Json; devolve dados em MB', async () => {
     setPlatform('win32');
-    vi.mocked(execaModule.execa).mockResolvedValueOnce(execaResult('Process List'));
+    const json = JSON.stringify([
+      { Id: 1, Name: 'pequeno', WS: 10 * 1_048_576 },
+      { Id: 2, Name: 'grande', WS: 400 * 1_048_576 },
+    ]);
+    vi.mocked(execaModule.execa).mockResolvedValueOnce(execaResult(json));
 
-    await cmd.execute();
+    const data = await cmd.execute();
 
     expect(execaModule.execa).toHaveBeenCalledWith('powershell', [
       '-NoProfile',
       '-Command',
-      'Get-Process | Sort-Object WS -Descending | Select-Object -First 10 Name, Id, WS',
+      expect.stringContaining('ConvertTo-Json -Compress'),
     ]);
-    expect(logSpy).toHaveBeenCalledWith('Process List');
+    expect(data.processes).toEqual([
+      { memoryMb: 400, name: 'grande', pid: 2 },
+      { memoryMb: 10, name: 'pequeno', pid: 1 },
+    ]);
   });
 
-  it.each(['linux', 'darwin'])(
-    'usa ps portátil (sem --sort) e ordena por memória em %s',
-    async (platform) => {
-      setPlatform(platform);
-      vi.mocked(execaModule.execa).mockResolvedValueOnce(
-        execaResult('  10   2048 small\n  20 409600 big proc\n  30  10240 mid'),
-      );
+  it('Windows com um único processo (PowerShell devolve objeto, não lista)', async () => {
+    setPlatform('win32');
+    vi.mocked(execaModule.execa).mockResolvedValueOnce(
+      execaResult(JSON.stringify({ Id: 7, Name: 'so', WS: 1_048_576 })),
+    );
 
-      await cmd.execute();
+    await expect(cmd.execute()).resolves.toEqual({
+      processes: [{ memoryMb: 1, name: 'so', pid: 7 }],
+    });
+  });
 
-      expect(execaModule.execa).toHaveBeenCalledWith('ps', ['-axo', 'pid=,rss=,comm=']);
-      const table = String(logSpy.mock.calls.at(-1)?.[0]).split('\n');
-      expect(table[1]).toContain('big proc');
-      expect(table[1]).toContain('400.0 MB');
-      expect(table[2]).toContain('mid');
-      expect(table[3]).toContain('small');
-    },
-  );
+  it.each(['linux', 'darwin'])('%s: ps portátil (sem --sort) ordenado em JS', async (platform) => {
+    setPlatform(platform);
+    vi.mocked(execaModule.execa).mockResolvedValueOnce(
+      execaResult('  10   2048 small\n  20 409600 big proc\n  30  10240 mid'),
+    );
+
+    const data = await cmd.execute();
+
+    expect(execaModule.execa).toHaveBeenCalledWith('ps', ['-axo', 'pid=,rss=,comm=']);
+    expect(data.processes.map((p) => p.name)).toEqual(['big proc', 'mid', 'small']);
+    expect(data.processes[0]).toEqual({ memoryMb: 400, name: 'big proc', pid: 20 });
+  });
 
   it('limita a 10 processos', async () => {
     setPlatform('linux');
@@ -76,33 +84,44 @@ describe('TopMemoryCommand', () => {
     );
     vi.mocked(execaModule.execa).mockResolvedValueOnce(execaResult(lines));
 
-    await cmd.execute();
-
-    expect(String(logSpy.mock.calls.at(-1)?.[0]).split('\n')).toHaveLength(11); // cabeçalho + 10
+    expect((await cmd.execute()).processes).toHaveLength(10);
   });
 
-  it('em caso de erro, informa e sai com código 1', async () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('falha do comando vira CliError COMMAND_FAILED (exit 1)', async () => {
     vi.mocked(execaModule.execa).mockRejectedValueOnce(new Error('Command failed'));
 
-    await expect(cmd.execute()).resolves.toBeUndefined();
-
-    expect(errorSpy).toHaveBeenCalledWith(expect.anything(), 'Command failed');
-    expect(process.exitCode).toBe(1);
+    await expect(cmd.execute()).rejects.toMatchObject({
+      code: 'COMMAND_FAILED',
+      exitCode: 1,
+      message: expect.stringContaining('Command failed'),
+    });
   });
 
   it('erro que não é Error também é reportado', async () => {
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.mocked(execaModule.execa).mockRejectedValueOnce('falhou');
 
-    await cmd.execute();
+    await expect(cmd.execute()).rejects.toMatchObject({
+      message: expect.stringContaining('falhou'),
+    });
+  });
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.anything(), 'falhou');
+  it('format: tabela com cabeçalho e uma linha por processo', () => {
+    const out = cmd.format({ processes: [{ memoryMb: 400, name: 'big', pid: 20 }] });
+
+    expect(out).toContain('Top 10');
+    expect(out).toContain('PID');
+    expect(out).toContain('400.0 MB  big');
   });
 });
 
-describe('parsePs', () => {
-  it('ignora linhas inválidas e converte KB em MB', () => {
-    expect(parsePs('lixo\n  1 1024 init\n\n')).toEqual([{ mb: 1, name: 'init', pid: 1 }]);
+describe('parsers', () => {
+  it('parsePs ignora linhas inválidas e converte KB em MB', () => {
+    expect(parsePs('lixo\n  1 1024 init\n\n')).toEqual([{ memoryMb: 1, name: 'init', pid: 1 }]);
+  });
+
+  it('parseWindows converte bytes em MB', () => {
+    expect(parseWindows('{"Id":3,"Name":"x","WS":2097152}')).toEqual([
+      { memoryMb: 2, name: 'x', pid: 3 },
+    ]);
   });
 });

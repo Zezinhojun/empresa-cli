@@ -1,5 +1,8 @@
 import chalk from 'chalk';
 
+import { emitJson, SCHEMA_VERSION } from './output.js';
+import { getRuntime } from './runtime.js';
+
 /** Códigos de saída estáveis da CLI (documentados em docs/cli-contract.md). */
 export const ExitCode = {
   error: 1,
@@ -22,18 +25,31 @@ export class CliError extends Error {
   }
 }
 
-/** Imprime o erro em stderr e devolve o código de saída correspondente. */
+/**
+ * Reporta o erro e devolve o código de saída. Com --json imprime SÓ o envelope de erro em
+ * stdout (nada em stderr: ferramentas de agente costumam juntar os dois fluxos).
+ */
 export function reportError(error: unknown, verbose = false): number {
   // Ctrl+C dentro de um prompt do inquirer
   if (error instanceof Error && error.name === 'ExitPromptError') return ExitCode.interrupted;
 
-  if (error instanceof CliError) {
-    console.error(chalk.red(error.message));
-    if (error.hint) console.error(error.hint);
-    return error.exitCode;
+  const exitCode = error instanceof CliError ? error.exitCode : ExitCode.error;
+  const code = error instanceof CliError ? error.code : 'ERROR';
+  const hint = error instanceof CliError ? error.hint : undefined;
+  const message = error instanceof Error ? error.message : String(error);
+  const stack = verbose && error instanceof Error ? error.stack : undefined;
+
+  if (getRuntime().json) {
+    emitJson({
+      error: { code, message, ...(hint && { hint }), ...(stack && { stack }) },
+      ok: false,
+      schemaVersion: SCHEMA_VERSION,
+    });
+    return exitCode;
   }
 
-  console.error(chalk.red(error instanceof Error ? error.message : String(error)));
-  if (verbose && error instanceof Error && error.stack) console.error(error.stack);
-  return ExitCode.error;
+  console.error(chalk.red(message));
+  if (hint) console.error(hint);
+  if (stack) console.error(stack);
+  return exitCode;
 }

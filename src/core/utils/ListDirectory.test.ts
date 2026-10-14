@@ -3,7 +3,7 @@ import type { Dirent } from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-import { listDirectory } from './ListDirectory.js';
+import { listDirectory, readDirectory } from './ListDirectory.js';
 
 vi.mock('node:fs/promises');
 
@@ -40,5 +40,21 @@ describe('ListDirectory', () => {
     const result = await listDirectory('/empty');
 
     expect(result).toBeNull();
+  });
+
+  it('não imprime nada no console (a saída é responsabilidade de quem chama)', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.mocked(fsPromises.readdir).mockRejectedValueOnce(new Error('ENOENT'));
+
+    await listDirectory('/nada');
+
+    expect(logSpy).not.toHaveBeenCalled();
+    logSpy.mockRestore();
+  });
+
+  it('readDirectory propaga o erro original (inexistente, sem permissão...)', async () => {
+    vi.mocked(fsPromises.readdir).mockRejectedValueOnce(new Error('EACCES'));
+
+    await expect(readDirectory('/x')).rejects.toThrow('EACCES');
   });
 });

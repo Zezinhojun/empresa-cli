@@ -73,7 +73,6 @@ describe('bootstrap', () => {
   it.each([
     ['sem terminal (pipe)', () => setTty(false), []],
     ['--no-input', () => {}, ['--no-input']],
-    ['--json', () => {}, ['--json']],
   ])('sem argumentos e %s: mostra a ajuda e NUNCA abre o menu', async (_nome, preparar, argv) => {
     preparar();
 
@@ -81,6 +80,70 @@ describe('bootstrap', () => {
 
     expect(menu).not.toHaveBeenCalled();
     expect(logSpy.mock.calls.flat().join('\n')).toContain('Comandos:');
+  });
+
+  describe('--json', () => {
+    let writes: string[];
+    const json = () => JSON.parse(writes.join('')) as Record<string, unknown>;
+
+    beforeEach(() => {
+      writes = [];
+      vi.spyOn(process.stdout, 'write').mockImplementation((chunk) => {
+        writes.push(String(chunk));
+        return true;
+      });
+    });
+
+    it('sem argumentos: catálogo em JSON (não abre menu, não imprime texto)', async () => {
+      await bootstrap(['--json']);
+
+      const out = json() as { command: string; data: { commands: { name: string }[] } };
+      expect(out.command).toBe('help');
+      expect(out.data.commands.map((c) => c.name)).toEqual(['foo', 'livre', 'menu']);
+      expect(menu).not.toHaveBeenCalled();
+      expect(logSpy).not.toHaveBeenCalled();
+    });
+
+    it('--version: { version } no envelope', async () => {
+      await bootstrap(['--version', '--json']);
+
+      expect(json()).toMatchObject({
+        command: 'version',
+        data: { version: pkg.version },
+        ok: true,
+      });
+      expect(logSpy).not.toHaveBeenCalled();
+    });
+
+    it('<cmd> --help: descrição do comando (args, risco, uso)', async () => {
+      await bootstrap(['foo', '--help', '--json']);
+
+      expect(json()).toMatchObject({
+        command: 'help',
+        data: { name: 'foo', risk: 'read', usage: 'vox foo <alvo>' },
+        ok: true,
+      });
+    });
+
+    it('comando executado devolve os dados dele no envelope', async () => {
+      execute.mockReturnValueOnce({ n: 1 });
+
+      await bootstrap(['--json', 'foo', 'a']);
+
+      expect(json()).toEqual({ command: 'foo', data: { n: 1 }, ok: true, schemaVersion: 1 });
+    });
+  });
+
+  it.each([
+    ['terminal com cores', [], ''],
+    ['--plain', ['--plain'], ''],
+    ['NO_COLOR', [], '1'],
+  ])('%s: a versão é impressa igual (cores só mudam o estilo)', async (_nome, flags, noColor) => {
+    vi.stubEnv('NO_COLOR', noColor);
+
+    await bootstrap([...flags, '--version']);
+
+    expect(logSpy).toHaveBeenCalledExactlyOnceWith(pkg.version);
   });
 
   it('com CI=true não abre o menu mesmo com terminal', async () => {
