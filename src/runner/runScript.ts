@@ -124,11 +124,14 @@ export async function runScript(options: RunOptions): Promise<ScriptRun> {
     killGroup(subprocess.pid, signal);
     setTimeout(() => killGroup(subprocess.pid), FORCE_KILL_AFTER_MS).unref();
   };
-  const signals: NodeJS.Signals[] = ['SIGINT', 'SIGTERM', 'SIGHUP'];
-  if (ownGroup) for (const signal of signals) process.on(signal, forward);
+  // Um handler por sinal, com o nome já preso: não depende de o emissor passar o argumento.
+  const handlers = (['SIGINT', 'SIGTERM', 'SIGHUP'] as const).map(
+    (signal) => [signal, () => forward(signal)] as const,
+  );
+  if (ownGroup) for (const [signal, handler] of handlers) process.on(signal, handler);
 
   const result = await subprocess.finally(cleanup).finally(() => {
-    for (const signal of signals) process.off(signal, forward);
+    for (const [signal, handler] of handlers) process.off(signal, handler);
   });
   if (ownGroup && (result.timedOut || result.isMaxBuffer || interrupted)) {
     killGroup(subprocess.pid);
