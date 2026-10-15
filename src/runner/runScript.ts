@@ -36,12 +36,14 @@ export interface ScriptRun {
 }
 
 const DEFAULT_MAX_OUTPUT = 1_000_000;
+/** Folga para o script limpar o que precisar (trap) antes de ser encerrado à força. */
+const FORCE_KILL_AFTER_MS = 3000;
 
 /** Encerra o grupo de processos do script (o líder é o próprio script, via `detached`). */
-function killGroup(pid: number | undefined) {
+function killGroup(pid: number | undefined, signal: NodeJS.Signals = 'SIGKILL') {
   if (pid === undefined) return;
   try {
-    process.kill(-pid, 'SIGKILL');
+    process.kill(-pid, signal);
   } catch {
     // grupo já vazio: nada a encerrar
   }
@@ -113,8 +115,34 @@ export async function runScript(options: RunOptions): Promise<ScriptRun> {
     timeout: options.timeoutSec * 1000,
     windowsHide: true,
   });
-  const result = await subprocess.finally(cleanup);
-  if (ownGroup && (result.timedOut || result.isMaxBuffer)) killGroup(subprocess.pid);
+
+  // No grupo próprio o Ctrl+C do terminal não chega ao script (só à vox): repassamos o sinal ao grupo
+  // e, se o script o ignorar, encerramos à força depois de uma pequena folga.
+  let interrupted: NodeJS.Signals | undefined;
+  const forward = (signal: NodeJS.Signals) => {
+    interrupted = signal;
+    killGroup(subprocess.pid, signal);
+    setTimeout(() => killGroup(subprocess.pid), FORCE_KILL_AFTER_MS).unref();
+  };
+  // Um handler por sinal, com o nome já preso: não depende de o emissor passar o argumento.
+  const handlers = (['SIGINT', 'SIGTERM', 'SIGHUP'] as const).map(
+    (signal) => [signal, () => forward(signal)] as const,
+  );
+  if (ownGroup) for (const [signal, handler] of handlers) process.on(signal, handler);
+
+  const result = await subprocess.finally(cleanup).finally(() => {
+    for (const [signal, handler] of handlers) process.off(signal, handler);
+  });
+  if (ownGroup && (result.timedOut || result.isMaxBuffer || interrupted)) {
+    killGroup(subprocess.pid);
+  }
+  if (interrupted) {
+    throw new CliError(
+      `O script '${options.name}' foi interrompido (${interrupted}).`,
+      ExitCode.interrupted,
+      'INTERRUPTED',
+    );
+  }
   if (result.timedOut) {
     throw new CliError(
       `O script '${options.name}' passou de ${options.timeoutSec}s e foi interrompido.`,
