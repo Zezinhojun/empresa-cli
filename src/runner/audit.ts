@@ -37,10 +37,19 @@ const MASK = '***';
 /** Nomes de opção/variável que costumam carregar segredos. */
 const SENSITIVE_NAME =
   /(token|secret|pass(word|wd)?|pwd|api[-_]?key|auth|credential|cookie|bearer|private[-_]?key)/i;
-/** Prefixos de credenciais conhecidas (GitHub, GitLab, OpenAI/Stripe, Slack, AWS, JWT). */
+/** Prefixos de credenciais conhecidas (GitHub, GitLab, npm, OpenAI/Stripe, Slack, AWS, Google, JWT). */
 const SECRET_VALUE =
-  /^(gh[pousr]_|github_pat_|glpat-|sk-|sk_live_|rk_live_|xox[abprs]-|AKIA[0-9A-Z]{16}|eyJ[\w-]{10,}\.)/;
-const URL_PASSWORD = /(\/\/[^/\s:@]+:)[^@\s/]+@/;
+  /^(gh[pousr]_|github_pat_|glpat-|npm_|sk-|sk_live_|sk_test_|rk_live_|xox[abprs]-|AKIA[0-9A-Z]{16}|AIza[\w-]{20,}|eyJ[\w-]{10,}\.)/;
+/** Usuário opcional; a senha vai até o ÚLTIMO @ antes da primeira barra (a senha pode conter @). */
+const URL_PASSWORD = /(\/\/[^/\s:@]*:)[^/\s]+@/;
+/** Cabeçalhos HTTP com credencial (`-H "Authorization: Bearer x"`, `--header=X-Api-Key: x`). */
+const HEADER_SECRET =
+  /\b(authorization|proxy-authorization|cookie|set-cookie|x-[\w-]*(?:key|token|secret|auth)[\w-]*)\s*:\s*\S.*$/i;
+/** `Bearer abc` / `Basic abc` soltos. */
+const SCHEME_SECRET = /^(bearer|basic)\s+\S+$/i;
+/** Segredo em query string: `?token=abc&x=1`. */
+const QUERY_SECRET =
+  /([?&][\w.-]*(?:token|secret|pass(?:word|wd)?|pwd|api[-_]?key|auth|credential|signature|sig|key)[\w.-]*=)[^&\s#]*/gi;
 
 /**
  * Esconde segredos óbvios nos argumentos antes de gravar o log. É "melhor esforço": a regra de ouro
@@ -56,7 +65,7 @@ export function maskArgs(args: string[]): string[] {
       maskNext = false;
       return MASK;
     }
-    if (SECRET_VALUE.test(arg)) return MASK;
+    if (SECRET_VALUE.test(arg) || SCHEME_SECRET.test(arg)) return MASK;
 
     // --token=valor | NOME=valor
     const assignment = /^(-{0,2}[\w.-]+)=(.*)$/s.exec(arg);
@@ -65,7 +74,10 @@ export function maskArgs(args: string[]): string[] {
     // --token valor  (o valor é o próximo argumento)
     if (/^-{1,2}[\w.-]+$/.test(arg) && SENSITIVE_NAME.test(arg)) maskNext = true;
 
-    return arg.replace(URL_PASSWORD, `$1${MASK}@`);
+    return arg
+      .replace(HEADER_SECRET, `$1: ${MASK}`)
+      .replace(URL_PASSWORD, `$1${MASK}@`)
+      .replace(QUERY_SECRET, `$1${MASK}`);
   });
 }
 
