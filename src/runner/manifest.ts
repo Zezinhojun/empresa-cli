@@ -144,7 +144,11 @@ export function parseManifest(raw: unknown, source: string): Manifest {
 
   if (typeof entry !== 'string' || entry === '') {
     problems.push('"entry" é obrigatório (arquivo do script, ex.: "setup.sh")');
-  } else if (path.isAbsolute(entry) || /(^|[\\/])\.\.([\\/]|$)/.test(entry)) {
+  } else if (
+    path.posix.isAbsolute(entry) ||
+    path.win32.isAbsolute(entry) ||
+    /(^|[\\/])\.\.([\\/]|$)/.test(entry)
+  ) {
     problems.push('"entry" deve ser relativo à pasta do script, sem ".."');
   } else if (!runtimeOf(entry)) {
     problems.push('"entry" deve ter extensão .js, .mjs, .cjs, .sh ou .py');
