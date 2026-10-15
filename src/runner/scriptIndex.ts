@@ -149,6 +149,13 @@ export function buildIndex(root: string, reserved: Iterable<string> = []): Scrip
       problems.push(`${label}: o arquivo de entrada "${manifest.entry}" não existe`);
     }
 
+    // O Bash lê o CR como parte do comando e falha só na máquina de quem roda ("\r: command not found").
+    for (const file of files.filter((name) => name.endsWith('.sh'))) {
+      if (readFileSync(path.join(scriptDir, file)).includes('\r\n')) {
+        problems.push(`${label}: "${file}" usa fim de linha CRLF; converta para LF`);
+      }
+    }
+
     scripts.push({ dir, files: hashDirectory(scriptDir), manifest });
   }
 
@@ -161,8 +168,15 @@ export function readIndex(root: string): ScriptIndex | undefined {
   const file = path.join(root, INDEX_FILE);
   if (!existsSync(file)) return undefined;
 
-  const parsed = JSON.parse(readFileSync(file, 'utf8')) as Partial<ScriptIndex>;
-  if (parsed.schemaVersion !== 1 || !Array.isArray(parsed.scripts)) {
+  let parsed: Partial<ScriptIndex> | null;
+  try {
+    parsed = JSON.parse(readFileSync(file, 'utf8')) as Partial<ScriptIndex> | null;
+  } catch {
+    throw new ScriptIndexError([
+      `${INDEX_FILE} está ilegível (truncado ou corrompido); gere de novo com o build`,
+    ]);
+  }
+  if (parsed?.schemaVersion !== 1 || !Array.isArray(parsed.scripts)) {
     throw new ScriptIndexError([
       `${INDEX_FILE} tem formato desconhecido; gere de novo com o build`,
     ]);

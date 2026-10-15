@@ -197,6 +197,19 @@ describe('readIndex', () => {
     expect(() => readIndex(root)).toThrow(/formato desconhecido/);
   });
 
+  it.each([
+    ['truncado', '{"schemaVersion":1,"scripts":[{"dir":"alfa"'],
+    ['vazio', ''],
+    ['null', 'null'],
+    ['lista', '[]'],
+    ['texto', '"oi"'],
+    ['scripts não é lista', '{"schemaVersion":1,"scripts":{}}'],
+  ])('índice %s: ScriptIndexError claro, nunca SyntaxError/TypeError cru', (_nome, conteudo) => {
+    write(conteudo);
+
+    expect(() => readIndex(root)).toThrow(ScriptIndexError);
+  });
+
   it('revalida os manifestos: índice adulterado com campo extra é rejeitado', () => {
     script('alfa', ok('alfa'));
     const built = buildIndex(root);
@@ -204,6 +217,31 @@ describe('readIndex', () => {
     write(built);
 
     expect(() => readIndex(root)).toThrow(/campo desconhecido "rodar"/);
+  });
+});
+
+describe('buildIndex: scripts .sh com fim de linha CRLF', () => {
+  it('recusa .sh com CRLF (o Bash falharia com "\\r: command not found")', () => {
+    script('com-crlf', ok('com-crlf', { entry: 'run.sh' }), {
+      'run.sh': 'echo oi\r\necho tchau\r\n',
+    });
+
+    expect(problemsOf()).toEqual([
+      expect.stringContaining('vox-scripts/com-crlf: "run.sh" usa fim de linha CRLF'),
+    ]);
+  });
+
+  it('também pega .sh de apoio (não só a entrada)', () => {
+    script('apoio', ok('apoio'), { 'lib/util.sh': 'x=1\r\n', 'run.js': 'x' });
+
+    expect(problemsOf().join('\n')).toContain('"lib/util.sh" usa fim de linha CRLF');
+  });
+
+  it('aceita .sh com LF e outros tipos com CRLF', () => {
+    script('lf', ok('lf', { entry: 'run.sh' }), { 'run.sh': 'echo oi\n' });
+    script('js', ok('js'), { 'run.js': 'console.log(1);\r\n' });
+
+    expect(problemsOf()).toEqual([]);
   });
 });
 

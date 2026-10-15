@@ -146,6 +146,24 @@ describe('integridade: script alterado depois da instalação NÃO executa', () 
     });
   });
 
+  it('o PRÓPRIO arquivo de entrada trocado por link para fora: recusado e nada executa', async (context) => {
+    const cmd = build();
+    const fora = path.join(work, 'fora.js');
+    writeFileSync(fora, `require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'fora');`);
+    unlinkSync(path.join(dir, 'run.js'));
+    try {
+      symlinkSync(fora, path.join(dir, 'run.js'));
+    } catch {
+      context.skip(); // Windows sem privilégio para criar links
+    }
+
+    await expect(cmd.execute()).rejects.toMatchObject({
+      code: 'INTEGRITY_ERROR',
+      details: { symlinks: ['run.js'] },
+    });
+    expect(existsSync(marker)).toBe(false);
+  });
+
   it('a checagem vem ANTES de tudo: nem pergunta confirmação nem confere sistema/requisitos', async () => {
     const outroSistema = process.platform === 'win32' ? 'linux' : 'win32';
     const cmd = build({ os: [outroSistema], requires: ['nao-existe-xyz'], risk: 'destructive' });
