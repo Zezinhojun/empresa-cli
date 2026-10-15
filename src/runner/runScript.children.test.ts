@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
@@ -62,4 +62,45 @@ setTimeout(() => {}, 60000);
 
     expect(morreu, `o filho (pid ${pid}) continuou vivo depois do timeout`).toBe(true);
   }, 20_000);
+
+  // Sem terminal o script roda em grupo próprio, então o Ctrl+C só chega à vox: ela precisa repassar.
+  it.skipIf(process.platform === 'win32')(
+    'Ctrl+C (SIGINT) encerra o script e o filho, e sai com 130 (INTERRUPTED)',
+    async () => {
+      const pidFile = path.join(dir, 'filho-sigint.pid');
+      const entry = path.join(dir, 'pai-sigint.mjs');
+      writeFileSync(
+        entry,
+        `import { spawn } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
+const filho = spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], { stdio: 'ignore' });
+writeFileSync(${JSON.stringify(pidFile)}, String(filho.pid));
+setTimeout(() => {}, 60000);
+`,
+      );
+
+      const running = runScript({
+        args: [],
+        capture: true,
+        dryRun: false,
+        entry,
+        env: { PATH: process.env.PATH ?? '', SystemRoot: process.env.SystemRoot ?? '' },
+        interactive: false,
+        name: 'sigint',
+        timeoutSec: 30,
+      });
+      const outcome = expect(running).rejects.toMatchObject({ code: 'INTERRUPTED', exitCode: 130 });
+
+      expect(await waitFor(() => existsSync(pidFile))).toBe(true);
+      process.emit('SIGINT');
+      await outcome;
+
+      const pid = Number(readFileSync(pidFile, 'utf8'));
+      const morreu = await waitFor(() => !alive(pid));
+      if (!morreu) process.kill(pid, 'SIGKILL');
+
+      expect(morreu, `o filho (pid ${pid}) continuou vivo depois do Ctrl+C`).toBe(true);
+    },
+    20_000,
+  );
 });
