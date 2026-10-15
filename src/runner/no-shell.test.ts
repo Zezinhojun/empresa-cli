@@ -52,6 +52,6 @@ describe('runner: nada de shell nem avaliação dinâmica', () => {
   it('a execução dos scripts usa execa com argumentos em array', () => {
     const run = sources.find(({ file }) => file.endsWith('runScript.ts'))?.code ?? '';
 
-    expect(run).toMatch(/await execa\(\s*interpreter\.command,\s*spawnArgs/);
+    expect(run).toMatch(/execa\(\s*interpreter\.command,\s*spawnArgs/);
   });
 });

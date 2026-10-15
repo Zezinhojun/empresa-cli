@@ -37,6 +37,16 @@ export interface ScriptRun {
 
 const DEFAULT_MAX_OUTPUT = 1_000_000;
 
+/** Encerra o grupo de processos do script (o líder é o próprio script, via `detached`). */
+function killGroup(pid: number | undefined) {
+  if (pid === undefined) return;
+  try {
+    process.kill(-pid, 'SIGKILL');
+  } catch {
+    // grupo já vazio: nada a encerrar
+  }
+}
+
 export async function runScript(options: RunOptions): Promise<ScriptRun> {
   const runtime = runtimeOf(options.entry);
   if (!runtime) {
@@ -86,7 +96,12 @@ export async function runScript(options: RunOptions): Promise<ScriptRun> {
     ];
   }
 
-  const result = await execa(interpreter.command, spawnArgs, {
+  // Em POSIX o Node só mata o processo direto; netos ficariam órfãos depois de um timeout. Rodando
+  // em grupo próprio dá para encerrar a árvore toda. Só sem terminal: um grupo em segundo plano não
+  // pode ler do TTY, e o modo interativo precisa do stdin herdado. No Windows o execa já mata a árvore.
+  const ownGroup = process.platform !== 'win32' && !options.interactive;
+  const subprocess = execa(interpreter.command, spawnArgs, {
+    detached: ownGroup,
     ...(options.cwd && { cwd: options.cwd }),
     env,
     extendEnv: false,
@@ -97,7 +112,9 @@ export async function runScript(options: RunOptions): Promise<ScriptRun> {
     stdout: options.capture ? 'pipe' : 'inherit',
     timeout: options.timeoutSec * 1000,
     windowsHide: true,
-  }).finally(cleanup);
+  });
+  const result = await subprocess.finally(cleanup);
+  if (ownGroup && (result.timedOut || result.isMaxBuffer)) killGroup(subprocess.pid);
   if (result.timedOut) {
     throw new CliError(
       `O script '${options.name}' passou de ${options.timeoutSec}s e foi interrompido.`,
