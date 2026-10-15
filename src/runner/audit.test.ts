@@ -44,6 +44,47 @@ describe('maskArgs: esconde segredos óbvios', () => {
     expect(maskArgs([inicio + resto])).toEqual(['***']);
   });
 
+  // Formatos que vazavam: o segredo está no meio do argumento, não no nome da opção.
+  it.each([
+    ['Authorization: Bearer abc123segredo', 'Authorization: ***'],
+    ['--header=Authorization: Bearer abc123segredo', '--header=Authorization: ***'],
+    ['X-Api-Key: abc123segredo', 'X-Api-Key: ***'],
+    ['Cookie: sessao=abc123segredo; outro=1', 'Cookie: ***'],
+    ['Bearer abc123segredo', '***'],
+    ['https://h.com/a?token=abc123segredo', 'https://h.com/a?token=***'],
+    [
+      'https://h.com/a?x=1&access_token=abc123segredo&y=2',
+      'https://h.com/a?x=1&access_token=***&y=2',
+    ],
+    ['https://h.com/a?X-Amz-Signature=abc123segredo', 'https://h.com/a?X-Amz-Signature=***'],
+    ['https://:abc123segredo@h.com/x', 'https://:***@h.com/x'],
+    ['https://u:p@ss@h.com/x', 'https://u:***@h.com/x'],
+    ['postgres://u:abc123segredo@db:5432/x', 'postgres://u:***@db:5432/x'],
+  ])('segredo no meio do argumento: %s', (entrada, saida) => {
+    const [mascarado] = maskArgs([entrada]);
+
+    expect(mascarado).toBe(saida);
+    expect(mascarado).not.toContain('abc123segredo');
+  });
+
+  it.each([
+    ['npm_', 'abcdefghijklmnopqrstuvwxyz0123456789'],
+    ['sk_test', '_abcdefghijklmnop'],
+    ['AIza', 'SyAbcdefghijklmnopqrstuvwxyz012345'],
+  ])('credencial pelo formato (npm, Stripe teste, Google): %s…', (inicio, resto) => {
+    expect(maskArgs([inicio + resto])).toEqual(['***']);
+  });
+
+  it('não confunde URL comum com segredo (porta, query inofensiva)', () => {
+    const comuns = [
+      'https://host:8080/caminho',
+      'https://h.com/a?pagina=2&ordem=nome',
+      'http://localhost:3000',
+    ];
+
+    expect(maskArgs(comuns)).toEqual(comuns);
+  });
+
   it('senha dentro de uma URL', () => {
     expect(maskArgs(['https://usuario:senha-secreta@host.com/repo.git'])).toEqual([
       'https://usuario:***@host.com/repo.git',

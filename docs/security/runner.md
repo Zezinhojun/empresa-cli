@@ -79,7 +79,11 @@ um script. Decisão de origem dos scripts: [ADR 0002](../adr/0002-scripts-empaco
 4. **`--yes` é uma convenção, não uma barreira.** Um agente induzido por prompt injection pode passar `--yes`.
    O guia do agente instrui a só usá-lo quando o usuário pediu, mas a imposição real é do **cliente do agente**
    (aprovação de comandos). Para scripts `destructive`, prefira exigir confirmação humana no cliente.
-5. **A máscara do log é heurística.** Segredos com formato incomum passam.
+5. **A máscara do log é heurística.** Segredos com formato incomum passam. Cobertos: opções e variáveis com
+   nome sensível (`--token`, `*_SECRET`), cabeçalhos (`Authorization`, `Cookie`, `X-*-Key`), `Bearer`/`Basic`,
+   senha em URL, segredo em query string e prefixos conhecidos (GitHub, GitLab, npm, Stripe, Slack, AWS, Google,
+   JWT). **Não** cobertos: segredo posicional sem pista (`vox deploy minha-senha`), valor em base64 sem prefixo
+   e segredo escrito pelo próprio script na saída. Não passe segredo por argumento.
 6. **Janela entre verificar e executar** (TOCTOU): mínima; quem consegue explorá-la já escreve nos arquivos do
    usuário.
 7. **O interpretador é o do usuário** (Node, Bash, Python). Se estiver comprometido, o runner não ajuda.
