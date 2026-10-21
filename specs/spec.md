@@ -9,15 +9,15 @@ Comandos/core/utils sem testes unitários.
 Requisito: Adicionar testes unitários para todos os arquivos da aplicação.
 
 ## Requisitos Funcionais
-- [ ] Testes p/ CommandRegistry (singleton, register, list, get)
-- [ ] Testes p/ CommandExecutor (execute, not found)
-- [ ] Testes p/ MenuCommand (loop, select, exit)
-- [ ] Testes p/ CleanMemoryCommand (win32/unix, confirm)
-- [ ] Testes p/ ListVoxCommand
-- [ ] Testes p/ VoxHome, VoxArquitetura (paths)
-- [ ] Testes p/ ListDirectory
-- [ ] vitest.config.ts com thresholds 80%
-- [ ] test/setup.ts com mocks globais (execa, inquirer, chalk, ora)
+- [x] Testes p/ CommandRegistry (singleton, register, list, get)
+- [x] Testes p/ CommandExecutor (execute, not found)
+- [x] Testes p/ MenuCommand (loop, select, exit)
+- [x] Testes p/ CleanMemoryCommand (win32/unix, confirm) — comando substituído por `top-memory` (TopMemoryCommand.test.ts)
+- [x] Testes p/ ListVoxCommand
+- [x] Testes p/ VoxHome, VoxArquitetura (paths)
+- [x] Testes p/ ListDirectory
+- [x] vitest.config.ts com thresholds 80%
+- [x] test/setup.ts com mocks globais (execa, inquirer, chalk; `ora` foi removido do projeto)
 
 ## Requisitos Não-Funcionais
 - Suite < 30s
@@ -34,12 +34,12 @@ Requisito: Adicionar testes unitários para todos os arquivos da aplicação.
 
 
 ## Critérios de Aceite
-- [ ] Todos src/**/*.ts têm *.test.ts correspondente
-- [ ] npm test:coverage ≥ 80% em todos thresholds
-- [ ] npm test passa (0 falhas)
-- [ ] npm run lint passa
-- [ ] npm run build passa
-- [ ] Testes isolados, sem vazamento de mocks
+- [x] Todos src/**/*.ts com lógica têm *.test.ts (exceções: `Command.ts` só tipos, `index.ts` e `builtins.ts` só reexportam)
+- [x] npm test:coverage ≥ 80% em todos thresholds
+- [x] npm test passa (0 falhas)
+- [x] npm run lint passa
+- [x] npm run build passa
+- [x] Testes isolados, sem vazamento de mocks
 
 ## Arquivos Afetados
 - vitest.config.ts
