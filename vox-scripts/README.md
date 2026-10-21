@@ -74,6 +74,11 @@ No Windows não há Bash nem Python por padrão. Se faltar, a CLI **não executa
 
 Na dúvida, escolha o risco **mais alto**. O menu mostra `[altera coisas]` / `[pode apagar dados]` ao lado do comando.
 
+> **Planejado ([ADR 0003](../docs/adr/0003-permissoes-scripts-destrutivos.md), ainda não implementado):** o
+> manifesto ganhará `effects` (`delete:node_modules`, `install:npm`, `network`…), só informativo e conferido na
+> revisão do PR; a confirmação mostrará o diretório alvo; e script `destructive` sem terminal exigirá
+> `--confirm=<nome da pasta alvo>` além de `--yes`. Até lá, `effects` é rejeitado como campo desconhecido.
+
 ## O que o script recebe
 
 - **Argumentos:** exatamente como a pessoa digitou, um por posição (`$1`, `sys.argv[1]`, `process.argv[2]`).
