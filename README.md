@@ -28,14 +28,16 @@ vox --help             # lista comandos e opções
 vox --version
 ```
 
-| Comando       | O que faz                                                                              |
-| ------------- | -------------------------------------------------------------------------------------- |
-| `menu`        | Menu interativo com os comandos disponíveis (com opção "Sair")                         |
-| `list-vox`    | Lista o conteúdo de `~/vox/arquitetura` (aceita uma subpasta: `vox list-vox services`) |
-| `top-memory`  | Lista os 10 processos que mais consomem memória (PowerShell / `ps`)                    |
-| `list`        | Lista os comandos (`--json`: catálogo com argumentos e risco)                          |
-| `agent-guide` | Guia de uso para agentes de IA (`--json`: guia + contrato + catálogo)                  |
-| `doctor`      | Confere se o computador tem Node, Bash e Python e ensina a instalar o que faltar       |
+| Comando       | O que faz                                                                                                   |
+| ------------- | ----------------------------------------------------------------------------------------------------------- |
+| `menu`        | Menu interativo com os comandos disponíveis (com opção "Sair")                                              |
+| `list-vox`    | Lista o conteúdo de `~/vox/arquitetura` (aceita uma subpasta: `vox list-vox services`)                      |
+| `top-memory`  | Lista os 10 processos que mais consomem memória (PowerShell / `ps`)                                         |
+| `list`        | Lista os comandos (`--json`: catálogo com argumentos e risco)                                               |
+| `agent-guide` | Guia de uso para agentes de IA (`--json`: guia + contrato + catálogo)                                       |
+| `stats`       | Mostra os scripts mais usados e os erros mais comuns **deste computador** (lê `~/.vox/audit.log`)           |
+| `report`      | Prepara um relatório sem dados pessoais e abre uma issue já preenchida no GitHub para você revisar e enviar |
+| `doctor`      | Confere se o computador tem Node, Bash e Python e ensina a instalar o que faltar                            |
 
 Comando inexistente imprime uma dica e sai com código `2`.
 

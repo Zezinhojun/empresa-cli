@@ -32,6 +32,7 @@ vox list --json                    # o que existe?
 vox list-vox --json                # lista ~/vox/arquitetura
 vox list-vox services --json       # subpasta
 vox top-memory --json              # 10 processos que mais usam memória
+vox stats --json                  # scripts mais usados e erros comuns deste computador
 vox doctor --json                  # o que este computador tem (Node, Bash, Python)
 vox <comando> --help --json        # detalhes de um comando
 ```

@@ -172,7 +172,7 @@ export async function runScript(options: RunOptions): Promise<ScriptRun> {
       `O script '${options.name}' falhou (código ${result.exitCode ?? 'desconhecido'}).`,
       ExitCode.error,
       'SCRIPT_FAILED',
-      undefined,
+      'Se o erro se repetir, rode `vox report` para enviar ao time um relatório sem dados pessoais.',
       { exitCode: result.exitCode ?? null, ...output },
     );
   }

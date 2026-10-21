@@ -80,6 +80,8 @@ describe('catálogo --json: formato estável', () => {
         risk: 'read',
       },
       { args: [], interactive: true, name: 'menu', requires: [], risk: 'read' },
+      { args: [], interactive: false, name: 'report', requires: [], risk: 'read' },
+      { args: [], interactive: false, name: 'stats', requires: [], risk: 'read' },
       { args: [], interactive: false, name: 'top-memory', requires: [], risk: 'read' },
     ]);
   });
