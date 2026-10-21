@@ -304,6 +304,36 @@ describe('auditoria: toda tentativa é registrada', () => {
     expect(audit()[0]).toMatchObject({ exitCode: null, outcome: 'dry-run' });
   });
 
+  it('registra effects e a pasta alvo; sem effects, os campos não aparecem', async () => {
+    setRuntime({ ...agent, confirm: path.basename(process.cwd()), yes: true });
+    await build({ effects: ['delete:node_modules'], risk: 'destructive' }).execute();
+    await build().execute();
+
+    const [destructive, plain] = audit();
+    expect(destructive).toMatchObject({
+      effects: ['delete:node_modules'],
+      outcome: 'ok',
+      target: expect.stringContaining(path.basename(process.cwd())),
+    });
+    expect(plain).not.toHaveProperty('effects');
+    expect(plain).not.toHaveProperty('target');
+  });
+
+  it('negado por falta de --confirm: registra denied com os effects e o alvo', async () => {
+    setRuntime({ ...agent, yes: true });
+
+    await expect(
+      build({ effects: ['delete:vendor'], risk: 'destructive' }).execute(),
+    ).rejects.toMatchObject({ code: 'CONFIRMATION_REQUIRED' });
+
+    expect(audit()[0]).toMatchObject({
+      effects: ['delete:vendor'],
+      errorCode: 'CONFIRMATION_REQUIRED',
+      outcome: 'denied',
+      target: expect.any(String),
+    });
+  });
+
   it('com --yes registra yes=true', async () => {
     setRuntime({ ...agent, yes: true });
 
