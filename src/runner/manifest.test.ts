@@ -25,6 +25,7 @@ describe('parseManifest', () => {
     expect(parseManifest(valid, 'x')).toEqual({
       args: [],
       description: 'Prepara um ambiente local',
+      effects: [],
       entry: 'setup.js',
       name: 'setup-local',
       os: [],
@@ -166,5 +167,18 @@ describe('parseManifest', () => {
     expect(error?.message).toContain('vox-scripts/ruim/manifest.json');
     expect(error?.message).toContain('- campo desconhecido "riks"');
     expect(error?.name).toBe('ManifestError');
+  });
+});
+
+describe('parseManifest: effects (ADR 0003)', () => {
+  const base = { description: 'x', entry: 'a.js', name: 'a', risk: 'destructive' };
+
+  it('aceita efeitos conhecidos', () => {
+    const effects = ['delete:node_modules', 'install:npm', 'network'];
+    expect(parseManifest({ ...base, effects }, 'x').effects).toEqual(effects);
+  });
+
+  it('rejeita efeito desconhecido', () => {
+    expect(() => parseManifest({ ...base, effects: ['delete:home'] }, 'x')).toThrow(/effects/);
   });
 });

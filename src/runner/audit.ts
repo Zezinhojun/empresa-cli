@@ -15,6 +15,8 @@ export type AuditOutcome =
 export interface AuditEntry {
   args: string[];
   durationMs: number;
+  /** Efeitos declarados e pasta alvo resolvida (só em scripts que declaram `effects`). */
+  effects?: string[];
   errorCode?: string;
   exitCode: number | null;
   /** Estava num terminal (pessoa) ou sem (agente/CI)? */
@@ -24,6 +26,7 @@ export interface AuditEntry {
   risk: string;
   runtime?: string;
   script: string;
+  target?: string;
   time: string;
   user: string;
   version: string;

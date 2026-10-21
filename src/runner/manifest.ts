@@ -15,6 +15,8 @@ export interface Manifest {
   args: ManifestArg[];
   category?: string;
   description: string;
+  /** O que o script apaga, instala ou acessa. Só informativo: quem confere é a revisão do PR (ADR 0003). */
+  effects: string[];
   /** Arquivo de entrada, relativo à pasta do script. O runtime sai da extensão. */
   entry: string;
   name: string;
@@ -33,6 +35,7 @@ const KNOWN_KEYS = new Set([
   'args',
   'category',
   'description',
+  'effects',
   'entry',
   'name',
   'os',
@@ -43,6 +46,7 @@ const KNOWN_KEYS = new Set([
 const RISKS: Risk[] = ['read', 'write', 'destructive'];
 const SYSTEMS: NodeJS.Platform[] = ['darwin', 'linux', 'win32'];
 const KEBAB = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+const EFFECT = /^(delete:(node_modules|vendor|var)|install:(npm|composer)|network)$/;
 const EXECUTABLE = /^[\w.-]+$/;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -177,6 +181,13 @@ export function parseManifest(raw: unknown, source: string): Manifest {
     'deve listar sistemas entre "darwin", "linux" e "win32"',
     problems,
   );
+  const effects = validateList(
+    raw.effects,
+    'effects',
+    (item) => EFFECT.test(item),
+    'deve listar efeitos entre delete:node_modules, delete:vendor, delete:var, install:npm, install:composer e network',
+    problems,
+  );
   const requires = validateList(
     raw.requires,
     'requires',
@@ -192,6 +203,7 @@ export function parseManifest(raw: unknown, source: string): Manifest {
     args,
     ...(typeof category === 'string' && { category }),
     description: description as string,
+    effects,
     entry: entry as string,
     name: name as string,
     os: os as NodeJS.Platform[],

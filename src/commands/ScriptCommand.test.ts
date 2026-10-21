@@ -238,7 +238,8 @@ describe.each(['write', 'destructive'] as const)('ScriptCommand (risk: %s)', (ri
     expect(existsSync(file)).toBe(false);
   });
 
-  it('agente com --yes: executa sem perguntar', async () => {
+  // destructive sem terminal exige também --confirm (ADR 0003): testado no bloco abaixo.
+  it.runIf(risk === 'write')('agente com --yes: executa sem perguntar', async () => {
     const file = marca();
 
     await expect(runWith({ ...agent, yes: true }, file)).resolves.toMatchObject({ exitCode: 0 });
@@ -292,5 +293,70 @@ describe('ScriptCommand: leitura nunca pergunta', () => {
     await command().execute();
 
     expect(confirm).not.toHaveBeenCalled();
+  });
+});
+
+describe('ScriptCommand (ADR 0003: effects, alvo e --confirm)', () => {
+  const folder = path.basename(process.cwd());
+  const destructive = (extra: Record<string, unknown> = {}) =>
+    command({ effects: ['delete:node_modules'], risk: 'destructive', ...extra });
+  const marca = () => path.join(out, `marca-adr3-${Math.random().toString(36).slice(2)}`);
+
+  it('agente com --yes sem --confirm: código 4, dica com a pasta e o script NÃO executa', async () => {
+    const file = marca();
+    setRuntime({ ...agent, yes: true });
+
+    await expect(destructive().execute(['marcar', file])).rejects.toMatchObject({
+      code: 'CONFIRMATION_REQUIRED',
+      exitCode: 4,
+      hint: expect.stringContaining(`--confirm=${folder}`),
+    });
+    expect(existsSync(file)).toBe(false);
+  });
+
+  it('--confirm com a pasta errada: código 4', async () => {
+    setRuntime({ ...agent, confirm: 'outra-pasta', yes: true });
+
+    await expect(destructive().execute()).rejects.toMatchObject({ exitCode: 4 });
+  });
+
+  it('--yes e --confirm=<pasta alvo>: executa e o alvo vai no resultado', async () => {
+    const file = marca();
+    setRuntime({ ...agent, confirm: folder, yes: true });
+
+    await expect(destructive().execute(['marcar', file])).resolves.toMatchObject({
+      effects: ['delete:node_modules'],
+      exitCode: 0,
+      target: expect.stringContaining(folder),
+    });
+    expect(existsSync(file)).toBe(true);
+  });
+
+  it('com terminal basta a pergunta (sem --confirm)', async () => {
+    vi.mocked(confirm).mockResolvedValueOnce(true);
+    setRuntime(person);
+
+    await expect(destructive().execute()).resolves.toMatchObject({ exitCode: 0 });
+  });
+
+  it('--dry-run lista efeitos e alvo sem exigir confirmação', async () => {
+    setRuntime({ ...agent, dryRun: true });
+    const result = await destructive().execute();
+
+    expect(result).toMatchObject({ dryRun: true, effects: ['delete:node_modules'] });
+    expect(destructive().format(result)).toMatch(/Pasta alvo: .*\n.*Efeitos: delete:node_modules/);
+  });
+
+  it('pasta que não é projeto: INVALID_TARGET (exit 2) e nada executa', async () => {
+    const file = marca();
+    const spy = vi.spyOn(process, 'cwd').mockReturnValue(out);
+    setRuntime({ ...agent, confirm: path.basename(out), yes: true });
+
+    await expect(destructive().execute(['marcar', file])).rejects.toMatchObject({
+      code: 'INVALID_TARGET',
+      exitCode: 2,
+    });
+    expect(existsSync(file)).toBe(false);
+    spy.mockRestore();
   });
 });

@@ -12,6 +12,7 @@ const OPTIONS = `Opções globais (valem para qualquer comando):
       --plain     Sem cores nem emojis
       --no-input  Nunca pergunta nada (falha em vez de abrir prompt)
   -y, --yes       Confirma automaticamente as perguntas
+      --confirm=<pasta>  Confirma script que apaga, sem terminal (junto com --yes)
       --dry-run   Mostra o que seria executado, sem executar (scripts)
       --verbose   Mostra detalhes técnicos dos erros
   --              Tudo depois é entregue literal ao comando`;
