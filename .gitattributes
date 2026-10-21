@@ -7,7 +7,7 @@
 *.mjs text eol=lf
 *.cjs text eol=lf
 .husky/* text eol=lf
-vox-scripts/** text eol=lf
+mycli-scripts/** text eol=lf
 test/fixtures/** text eol=lf
 
 # O resto: o Git normaliza para LF no repositório

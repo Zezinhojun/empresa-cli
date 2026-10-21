@@ -30,7 +30,7 @@ describe('AgentGuideCommand', () => {
   it('o guia ensina o fluxo essencial', () => {
     const { guide } = cmd.execute();
 
-    for (const trecho of ['vox list --json', '--json', 'risk', '--yes', 'interactive', '--']) {
+    for (const trecho of ['mycli list --json', '--json', 'risk', '--yes', 'interactive', '--']) {
       expect(guide).toContain(trecho);
     }
   });

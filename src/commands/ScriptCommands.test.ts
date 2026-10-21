@@ -33,7 +33,7 @@ const addScript = (name: string, manifest: Record<string, unknown> = {}) => {
 const publish = () => writeFileSync(path.join(root, INDEX_FILE), JSON.stringify(buildIndex(root)));
 
 beforeEach(() => {
-  root = path.join(mkdtempSync(path.join(tmpdir(), 'vox-cmds-')), 'vox-scripts');
+  root = path.join(mkdtempSync(path.join(tmpdir(), 'mycli-cmds-')), 'mycli-scripts');
   mkdirSync(root, { recursive: true });
   (CommandRegistry as unknown as { instance?: CommandRegistry | undefined }).instance = undefined;
   registry = CommandRegistry.getInstance();

@@ -43,7 +43,7 @@ const OUTCOME_BY_CODE: Record<string, AuditOutcome> = {
   UNSUPPORTED_OS: 'blocked',
 };
 
-/** Um script de `vox-scripts/` exposto como comando da CLI (menu, --help, vox list --json). */
+/** Um script de `mycli-scripts/` exposto como comando da CLI (menu, --help, mycli list --json). */
 export class ScriptCommand implements Command {
   public readonly args: CommandArg[];
   public readonly category?: string;
@@ -141,7 +141,7 @@ export class ScriptCommand implements Command {
         `Os arquivos do comando '${name}' foram alterados depois da instalação e ele não foi executado.`,
         ExitCode.error,
         'INTEGRITY_ERROR',
-        'Reinstale a vox para restaurar os arquivos originais: npm install -g cli-vox',
+        'Reinstale a mycli para restaurar os arquivos originais: npm install -g mycli',
         { changed, extra, missing, symlinks },
       );
     }
@@ -183,7 +183,7 @@ export class ScriptCommand implements Command {
           `O comando '${name}' não foi executado: ${(error as Error).message}`,
           ExitCode.usage,
           'INVALID_TARGET',
-          'Rode a vox de dentro da pasta do projeto.',
+          'Rode a mycli de dentro da pasta do projeto.',
           { cwd: process.cwd() },
         );
       }
@@ -220,11 +220,11 @@ export class ScriptCommand implements Command {
       dryRun,
       entry: path.join(this.dir, entry),
       env: buildScriptEnv(process.env, {
-        VOX_JSON: json ? '1' : '0',
-        VOX_NO_INPUT: interactive ? '0' : '1',
-        VOX_SCRIPT_DIR: this.dir,
-        VOX_VERSION: pkg.version,
-        VOX_YES: yes ? '1' : '0',
+        MYCLI_JSON: json ? '1' : '0',
+        MYCLI_NO_INPUT: interactive ? '0' : '1',
+        MYCLI_SCRIPT_DIR: this.dir,
+        MYCLI_VERSION: pkg.version,
+        MYCLI_YES: yes ? '1' : '0',
       }),
       interactive,
       name,

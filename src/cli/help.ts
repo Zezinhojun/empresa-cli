@@ -6,7 +6,7 @@ import type { CommandRegistry } from '../core/command/CommandRegistry.js';
 import pkg from '../../package.json' with { type: 'json' };
 
 const OPTIONS = `Opções globais (valem para qualquer comando):
-  -h, --help      Mostra a ajuda (também: vox <comando> --help)
+  -h, --help      Mostra a ajuda (também: mycli <comando> --help)
   -v, --version   Mostra a versão
       --json      Saída em JSON (apenas dados em stdout)
       --plain     Sem cores nem emojis
@@ -21,20 +21,20 @@ const EXIT_CODES = `Códigos de saída:
   0 sucesso · 1 erro · 2 uso inválido · 3 dependência ausente
   4 requer confirmação · 130 interrompido (Ctrl+C)`;
 
-/** `vox nome [opcional] <obrigatório>` */
+/** `mycli nome [opcional] <obrigatório>` */
 export function usage(command: Command): string {
   const args = (command.args ?? []).map((a) => (a.required ? `<${a.name}>` : `[${a.name}]`));
-  return ['vox', command.name, ...args].join(' ');
+  return ['mycli', command.name, ...args].join(' ');
 }
 
 export function printHelp(registry: CommandRegistry) {
-  console.log(`${chalk.bold('vox')} ${pkg.version}\n`);
-  console.log('Uso: vox [comando] [argumentos] [opções]\n');
+  console.log(`${chalk.bold('mycli')} ${pkg.version}\n`);
+  console.log('Uso: mycli [comando] [argumentos] [opções]\n');
   console.log('Comandos:');
   for (const { description = '', name } of registry.list()) {
     console.log(`  ${chalk.cyan(name.padEnd(14))}${description}`);
   }
-  console.log(`\n${OPTIONS}\n\n${EXIT_CODES}\n\nMais detalhes: vox <comando> --help`);
+  console.log(`\n${OPTIONS}\n\n${EXIT_CODES}\n\nMais detalhes: mycli <comando> --help`);
 }
 
 export function printCommandHelp(command: Command) {

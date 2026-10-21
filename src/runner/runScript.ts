@@ -67,7 +67,7 @@ export async function runScript(options: RunOptions): Promise<ScriptRun> {
       `O comando '${options.name}' precisa do ${RUNTIME_LABEL[runtime]}, que não está instalado neste computador.`,
       ExitCode.missingDependency,
       'MISSING_RUNTIME',
-      `${install} Para conferir o que falta: vox doctor`,
+      `${install} Para conferir o que falta: mycli doctor`,
       { install, runtime },
     );
   }
@@ -86,14 +86,14 @@ export async function runScript(options: RunOptions): Promise<ScriptRun> {
   // viram delimitador) e corromperia argumentos com ' ou ". Passamos os argumentos por um arquivo
   // separado por NUL e o bash os relê exatamente como vieram.
   if (runtime === 'bash' && process.platform === 'win32' && options.args.length > 0) {
-    const dir = mkdtempSync(path.join(tmpdir(), 'vox-args-'));
+    const dir = mkdtempSync(path.join(tmpdir(), 'mycli-args-'));
     const argsFile = path.join(dir, 'args');
     writeFileSync(argsFile, options.args.map((a) => `${a}\0`).join(''));
     cleanup = () => rmSync(dir, { force: true, recursive: true });
-    env = { ...env, VOX_ARGS_FILE: argsFile };
+    env = { ...env, MYCLI_ARGS_FILE: argsFile };
     spawnArgs = [
       '-c',
-      'mapfile -d "" -t __vox_args < "$VOX_ARGS_FILE"; exec bash "$0" "${__vox_args[@]}"',
+      'mapfile -d "" -t __mycli_args < "$MYCLI_ARGS_FILE"; exec bash "$0" "${__mycli_args[@]}"',
       options.entry,
     ];
   }
@@ -116,7 +116,7 @@ export async function runScript(options: RunOptions): Promise<ScriptRun> {
     windowsHide: true,
   });
 
-  // No grupo próprio o Ctrl+C do terminal não chega ao script (só à vox): repassamos o sinal ao grupo
+  // No grupo próprio o Ctrl+C do terminal não chega ao script (só à mycli): repassamos o sinal ao grupo
   // e, se o script o ignorar, encerramos à força depois de uma pequena folga.
   let interrupted: NodeJS.Signals | undefined;
   const forward = (signal: NodeJS.Signals) => {
@@ -172,7 +172,7 @@ export async function runScript(options: RunOptions): Promise<ScriptRun> {
       `O script '${options.name}' falhou (código ${result.exitCode ?? 'desconhecido'}).`,
       ExitCode.error,
       'SCRIPT_FAILED',
-      'Se o erro se repetir, rode `vox report` para enviar ao time um relatório sem dados pessoais.',
+      'Se o erro se repetir, rode `mycli report` para enviar ao time um relatório sem dados pessoais.',
       { exitCode: result.exitCode ?? null, ...output },
     );
   }

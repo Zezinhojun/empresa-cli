@@ -16,4 +16,4 @@ coverage/
 .config/
 
 # gerado no build (npm run scripts:index)
-vox-scripts/index.json
+mycli-scripts/index.json

@@ -32,7 +32,7 @@ const run = (entry: string, extra: Partial<RunOptions> = {}) =>
   });
 
 beforeAll(() => {
-  dir = mkdtempSync(path.join(tmpdir(), 'vox-runner-'));
+  dir = mkdtempSync(path.join(tmpdir(), 'mycli-runner-'));
   mkdirSync(path.join(dir, 'sub'));
 });
 afterAll(() => rmSync(dir, { force: true, recursive: true }));
@@ -86,21 +86,21 @@ describe('runScript (.js)', () => {
   });
 
   it('NÃO repassa segredos do ambiente; repassa PATH e as variáveis do runner', async () => {
-    process.env.VOX_TESTE_SEGREDO = 'nao-vazar';
+    process.env.MYCLI_TESTE_SEGREDO = 'nao-vazar';
     const entry = script('env.js', 'console.log(JSON.stringify(process.env));');
 
     const result = await run(entry, {
       env: {
+        MYCLI_JSON: '1',
         PATH: process.env.PATH ?? '',
         SystemRoot: process.env.SystemRoot ?? '',
-        VOX_JSON: '1',
       },
     });
-    delete process.env.VOX_TESTE_SEGREDO;
+    delete process.env.MYCLI_TESTE_SEGREDO;
 
     const env = JSON.parse(result.stdout ?? '') as Record<string, string>;
-    expect(env.VOX_TESTE_SEGREDO).toBeUndefined();
-    expect(env.VOX_JSON).toBe('1');
+    expect(env.MYCLI_TESTE_SEGREDO).toBeUndefined();
+    expect(env.MYCLI_JSON).toBe('1');
     expect(Object.keys(env).map((k) => k.toUpperCase())).toContain('PATH');
   });
 

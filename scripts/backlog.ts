@@ -1,5 +1,5 @@
 /**
- * Soma os relatórios `vox report` (issues com o rótulo `relatorio-vox`) e imprime o ranking de uso e
+ * Soma os relatórios `mycli report` (issues com o rótulo `relatorio-mycli`) e imprime o ranking de uso e
  * de erros para virar backlog. Uso: `npm run backlog` (precisa do `gh` autenticado).
  */
 import { execFileSync } from 'node:child_process';
@@ -13,7 +13,7 @@ const issues = JSON.parse(
       'issue',
       'list',
       '--label',
-      'relatorio-vox',
+      'relatorio-mycli',
       '--state',
       'all',
       '--limit',
@@ -33,7 +33,7 @@ let reports = 0;
 
 for (const { body } of issues) {
   const json = /```json\s*([\s\S]*?)```/.exec(body)?.[1];
-  if (!json || !body.includes('<!-- vox-report -->')) continue;
+  if (!json || !body.includes('<!-- mycli-report -->')) continue;
   try {
     const stats = JSON.parse(json) as Stats;
     reports += 1;

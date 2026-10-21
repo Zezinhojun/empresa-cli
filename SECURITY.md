@@ -4,9 +4,9 @@
 
 **Não abra uma issue pública** para vulnerabilidades. Use o relato privado do GitHub:
 **Security → Report a vulnerability** neste repositório
-(<https://github.com/Zezinhojun/empresa-cli/security/advisories/new>).
+(<https://github.com/OWNER/REPO/security/advisories/new>).
 
-Inclua: o que acontece, como reproduzir, a versão (`vox --version`) e o sistema operacional. Retornamos o
+Inclua: o que acontece, como reproduzir, a versão (`mycli --version`) e o sistema operacional. Retornamos o
 quanto antes e coordenamos a correção e a publicação.
 
 ## O que está no escopo

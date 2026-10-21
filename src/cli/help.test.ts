@@ -26,8 +26,8 @@ describe('help', () => {
   afterEach(() => vi.restoreAllMocks());
 
   it('usage marca obrigatórios com <> e opcionais com []', () => {
-    expect(usage(cmd)).toBe('vox fazer <alvo> [extra]');
-    expect(usage({ execute: () => {}, name: 'x' })).toBe('vox x');
+    expect(usage(cmd)).toBe('mycli fazer <alvo> [extra]');
+    expect(usage({ execute: () => {}, name: 'x' })).toBe('mycli x');
   });
 
   it('ajuda geral lista comandos, opções globais e códigos de saída', () => {
@@ -46,7 +46,7 @@ describe('help', () => {
   it('ajuda do comando mostra uso, argumentos e (opcional)', () => {
     printCommandHelp(cmd);
 
-    expect(out()).toContain('vox fazer <alvo> [extra]');
+    expect(out()).toContain('mycli fazer <alvo> [extra]');
     expect(out()).toContain('Quem');
     expect(out()).toContain('Quanto (opcional)');
     expect(out()).toContain('Códigos de saída');
@@ -54,6 +54,6 @@ describe('help', () => {
 
   it('comando sem args/descrição não quebra', () => {
     printCommandHelp({ execute: () => {}, name: 'simples' });
-    expect(out()).toContain('vox simples');
+    expect(out()).toContain('mycli simples');
   });
 });

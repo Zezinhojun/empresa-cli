@@ -3,7 +3,7 @@ import type { Command } from '../core/command/Command.js';
 import { CommandRegistry } from '../core/command/CommandRegistry.js';
 import { readEntries, type Stats, summarize } from '../runner/stats.js';
 
-/** Quais scripts este computador mais usa e onde mais falham (lê `~/.vox/audit.log`). */
+/** Quais scripts este computador mais usa e onde mais falham (lê `~/.mycli/audit.log`). */
 export class StatsCommand implements Command {
   public readonly args = [];
   public readonly description =
@@ -29,7 +29,7 @@ export class StatsCommand implements Command {
       ...scripts,
       ...(errors.length > 0 ? ['', 'Erros mais comuns:', ...errors] : []),
       '',
-      'Para reportar ao time, sem dados pessoais: vox report',
+      'Para reportar ao time, sem dados pessoais: mycli report',
     ].join('\n');
   }
 }

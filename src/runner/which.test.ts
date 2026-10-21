@@ -16,7 +16,7 @@ const file = (name: string, mode = 0o755) => {
 const same = (a: string | undefined, b: string) => a?.toLowerCase() === b.toLowerCase();
 
 beforeEach(() => {
-  dir = mkdtempSync(path.join(tmpdir(), 'vox-which-'));
+  dir = mkdtempSync(path.join(tmpdir(), 'mycli-which-'));
 });
 afterEach(() => rmSync(dir, { force: true, recursive: true }));
 
@@ -29,7 +29,7 @@ describe.skipIf(process.platform === 'win32')('which (POSIX)', () => {
   });
 
   it('o primeiro diretório do PATH vence', () => {
-    const outro = mkdtempSync(path.join(tmpdir(), 'vox-which2-'));
+    const outro = mkdtempSync(path.join(tmpdir(), 'mycli-which2-'));
     writeFileSync(path.join(outro, 'git'), '');
     chmodSync(path.join(outro, 'git'), 0o755);
     const primeiro = file('git');

@@ -10,7 +10,7 @@ export interface CommandInfo {
   category?: string;
   description: string;
   interactive: boolean;
-  /** `builtin` = comando da CLI; `script` = veio de `vox-scripts/`. */
+  /** `builtin` = comando da CLI; `script` = veio de `mycli-scripts/`. */
   kind: 'builtin' | 'script';
   name: string;
   /** Executáveis extras que o comando exige no PATH. */

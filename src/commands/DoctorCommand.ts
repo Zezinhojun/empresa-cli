@@ -30,7 +30,7 @@ export interface DoctorData {
 
 const USED_FOR: Record<Runtime, string> = {
   bash: 'scripts .sh',
-  node: 'a própria vox e scripts .js',
+  node: 'a própria mycli e scripts .js',
   python: 'scripts .py',
 };
 

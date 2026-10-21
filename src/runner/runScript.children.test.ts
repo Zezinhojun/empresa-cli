@@ -10,7 +10,7 @@ vi.unmock('execa');
 
 let dir: string;
 beforeAll(() => {
-  dir = mkdtempSync(path.join(tmpdir(), 'vox-children-'));
+  dir = mkdtempSync(path.join(tmpdir(), 'mycli-children-'));
 });
 afterAll(() => rmSync(dir, { force: true, recursive: true }));
 
@@ -63,7 +63,7 @@ setTimeout(() => {}, 60000);
     expect(morreu, `o filho (pid ${pid}) continuou vivo depois do timeout`).toBe(true);
   }, 20_000);
 
-  // Sem terminal o script roda em grupo próprio, então o Ctrl+C só chega à vox: ela precisa repassar.
+  // Sem terminal o script roda em grupo próprio, então o Ctrl+C só chega à mycli: ela precisa repassar.
   it.skipIf(process.platform === 'win32')(
     'Ctrl+C (SIGINT) encerra o script e o filho, e sai com 130 (INTERRUPTED)',
     async () => {

@@ -7,7 +7,7 @@ import { findScriptsRoot, readIndex } from '../runner/scriptIndex.js';
 import { ScriptCommand } from './ScriptCommand.js';
 
 /**
- * Registra cada script de `vox-scripts/` (lido do índice gerado no build) como um comando.
+ * Registra cada script de `mycli-scripts/` (lido do índice gerado no build) como um comando.
  * Não varre pastas em tempo de execução. Sem índice = nenhum script instalado.
  *
  * @returns quantos scripts foram registrados

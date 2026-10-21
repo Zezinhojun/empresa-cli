@@ -60,7 +60,7 @@ describe('bootstrap', () => {
     await bootstrap(['foo', '--help']);
     await bootstrap(['help', 'foo']);
 
-    expect(logSpy.mock.calls.flat().join('\n')).toContain('vox foo <alvo>');
+    expect(logSpy.mock.calls.flat().join('\n')).toContain('mycli foo <alvo>');
     expect(execute).not.toHaveBeenCalled();
   });
 
@@ -120,7 +120,7 @@ describe('bootstrap', () => {
 
       expect(json()).toMatchObject({
         command: 'help',
-        data: { name: 'foo', risk: 'read', usage: 'vox foo <alvo>' },
+        data: { name: 'foo', risk: 'read', usage: 'mycli foo <alvo>' },
         ok: true,
       });
     });
@@ -194,7 +194,7 @@ describe('bootstrap', () => {
     await expect(bootstrap(argv)).rejects.toMatchObject({
       code: 'INVALID_ARGUMENTS',
       exitCode: 2,
-      message: expect.stringContaining('Uso: vox'),
+      message: expect.stringContaining('Uso: mycli'),
     });
     expect(execute).not.toHaveBeenCalled();
   });

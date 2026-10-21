@@ -85,13 +85,13 @@ export function maskArgs(args: string[]): string[] {
 }
 
 /**
- * Onde gravar. `VOX_AUDIT_LOG=<arquivo>` troca o local; `off` desliga (só para CI/testes).
- * Padrão: `~/.vox/audit.log`.
+ * Onde gravar. `MYCLI_AUDIT_LOG=<arquivo>` troca o local; `off` desliga (só para CI/testes).
+ * Padrão: `~/.mycli/audit.log`.
  */
 export function auditLogPath(env: NodeJS.ProcessEnv = process.env): string | undefined {
-  const custom = env.VOX_AUDIT_LOG;
+  const custom = env.MYCLI_AUDIT_LOG;
   if (custom === 'off') return undefined;
-  return custom || path.join(homedir(), '.vox', 'audit.log');
+  return custom || path.join(homedir(), '.mycli', 'audit.log');
 }
 
 function currentUser(): string {

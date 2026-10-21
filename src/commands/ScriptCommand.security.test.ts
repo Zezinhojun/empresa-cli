@@ -56,12 +56,12 @@ const audit = () =>
     : [];
 
 beforeEach(() => {
-  work = mkdtempSync(path.join(tmpdir(), 'vox-sec-'));
+  work = mkdtempSync(path.join(tmpdir(), 'mycli-sec-'));
   dir = path.join(work, 'script');
   mkdirSync(dir);
   marker = path.join(work, 'executou.txt');
   auditFile = path.join(work, 'audit', 'audit.log');
-  process.env.VOX_AUDIT_LOG = auditFile;
+  process.env.MYCLI_AUDIT_LOG = auditFile;
   // Se for executado, cria o marcador (fora da pasta do script).
   writeFileSync(
     path.join(dir, 'run.js'),
@@ -70,7 +70,7 @@ beforeEach(() => {
   setRuntime(agent);
 });
 afterEach(() => {
-  process.env.VOX_AUDIT_LOG = 'off';
+  process.env.MYCLI_AUDIT_LOG = 'off';
   resetRuntime();
   vi.clearAllMocks();
   rmSync(work, { force: true, recursive: true });
@@ -88,7 +88,7 @@ describe('integridade: script alterado depois da instalação NÃO executa', () 
       code: 'INTEGRITY_ERROR',
       details: { changed: ['run.js'], extra: [], missing: [], symlinks: [] },
       exitCode: 1,
-      hint: expect.stringContaining('npm install -g cli-vox'),
+      hint: expect.stringContaining('npm install -g mycli'),
       message: expect.stringContaining('foram alterados'),
     });
     expect(existsSync(marker)).toBe(false);
@@ -388,13 +388,13 @@ describe('auditoria: toda tentativa é registrada', () => {
     // o "diretório" do log é, na verdade, um arquivo: mkdir/append vão falhar
     const bloqueio = path.join(work, 'bloqueio');
     writeFileSync(bloqueio, 'arquivo, não pasta');
-    process.env.VOX_AUDIT_LOG = path.join(bloqueio, 'audit.log');
+    process.env.MYCLI_AUDIT_LOG = path.join(bloqueio, 'audit.log');
 
     await expect(build().execute()).resolves.toMatchObject({ exitCode: 0 });
   });
 
-  it('VOX_AUDIT_LOG=off não cria arquivo', async () => {
-    process.env.VOX_AUDIT_LOG = 'off';
+  it('MYCLI_AUDIT_LOG=off não cria arquivo', async () => {
+    process.env.MYCLI_AUDIT_LOG = 'off';
 
     await build().execute();
 

@@ -1,4 +1,4 @@
-name: CI - VOX CLI
+name: CI - MYCLI CLI
 
 on:
   pull_request:

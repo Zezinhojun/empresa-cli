@@ -10,7 +10,7 @@ export interface ManifestArg {
   required: boolean;
 }
 
-/** Contrato de um script em `vox-scripts/<nome>/manifest.json` (ver ADR 0002). */
+/** Contrato de um script em `mycli-scripts/<nome>/manifest.json` (ver ADR 0002). */
 export interface Manifest {
   args: ManifestArg[];
   category?: string;

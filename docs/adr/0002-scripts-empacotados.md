@@ -6,7 +6,7 @@
 
 ## Contexto
 
-A `vox` precisa executar scripts `.sh`, `.py` e `.js` **sem que o usuário saiba o que são**, em máquinas de
+A `mycli` precisa executar scripts `.sh`, `.py` e `.js` **sem que o usuário saiba o que são**, em máquinas de
 devs e não-devs, e também quando chamada por agentes de IA (sem alguém olhando). Um script é código
 arbitrário: a origem dele define a segurança de todo o runner.
 
@@ -14,19 +14,19 @@ arbitrário: a origem dele define a segurança de todo o runner.
 
 ### 1. Origem: os scripts viajam **dentro do pacote npm**
 
-Os scripts ficam no repositório, em `vox-scripts/`, e são publicados junto com a CLI. Consequências desejadas:
+Os scripts ficam no repositório, em `mycli-scripts/`, e são publicados junto com a CLI. Consequências desejadas:
 
 - passam por **PR + revisão + CI** e pelo mesmo pipeline de staging → produção (com _provenance_);
 - a versão da CLI identifica exatamente quais scripts existem e qual o conteúdo deles;
 - não há download em tempo de execução, nem pasta do usuário, nem fonte remota na v1.
 
-Atualizar um script = nova release. Pasta do usuário (`~/vox/scripts`) e fontes remotas ficam **fora da v1**;
+Atualizar um script = nova release. Pasta do usuário (`~/mycli/scripts`) e fontes remotas ficam **fora da v1**;
 se vierem, terão ADR próprio, com confirmação explícita e assinatura.
 
 ### 2. Estrutura e manifesto
 
 ```
-vox-scripts/<nome>/
+mycli-scripts/<nome>/
   manifest.json     # contrato do script
   <entrada>.sh|.py|.js
   ...               # arquivos de apoio (templates etc.)
@@ -58,7 +58,7 @@ Manifesto inválido, sem `description` ou `risk`, ou com nome repetido/colidindo
 
 **Regra de ouro:** script destinado a **todos** (não-devs, Windows) deve ser **`.js`**. `.sh` e `.py` são para
 quem tem o runtime e **declaram** `os`/`requires`; se faltar algo, a CLI **não executa** e explica em português
-simples o que instalar, com código de saída `3` (`vox doctor`, #44).
+simples o que instalar, com código de saída `3` (`mycli doctor`, #44).
 
 > **Premissa a confirmar:** quais SOs os não-devs usam não foi informado. Assumimos o pior caso (Windows sem
 > bash nem Python), por isso `.js` é o padrão. Se a base for só macOS/Linux, a regra pode ser relaxada.
@@ -67,9 +67,9 @@ simples o que instalar, com código de saída `3` (`vox doctor`, #44).
 
 - **Sem shell:** `execa(interpretador, [entrada, ...args])`, argumentos sempre em array. Nada de interpolar string.
 - **Ambiente:** variáveis herdadas por **allowlist** (PATH, HOME/USERPROFILE, TEMP/TMP, LANG, SystemRoot…),
-  mais `VOX_JSON`, `VOX_NO_INPUT`, `VOX_YES`, `VOX_SCRIPT_DIR` e `VOX_VERSION`. Segredos do ambiente do usuário
+  mais `MYCLI_JSON`, `MYCLI_NO_INPUT`, `MYCLI_YES`, `MYCLI_SCRIPT_DIR` e `MYCLI_VERSION`. Segredos do ambiente do usuário
   não vazam para o script por padrão.
-- **cwd:** o diretório de onde o usuário chamou a `vox`.
+- **cwd:** o diretório de onde o usuário chamou a `mycli`.
 - **Streams:** em modo humano, stdout/stderr do script fluem em tempo real; com `--json`, são capturados
   (com limite de tamanho) e devolvidos em `data`. O stdin só é repassado quando a execução é interativa.
 - **Resultado:** código 0 = sucesso. Qualquer outro vira o erro `SCRIPT_FAILED` (saída `1`) com o código real
@@ -86,13 +86,13 @@ simples o que instalar, com código de saída `3` (`vox doctor`, #44).
 
 ### 6. Integridade
 
-No build, gera-se `vox-scripts/index.json` com o **SHA-256** de cada arquivo de cada script. O runner confere
+No build, gera-se `mycli-scripts/index.json` com o **SHA-256** de cada arquivo de cada script. O runner confere
 o hash antes de executar e recusa script adulterado. O índice também alimenta menu, `--help` e
-`vox list --json` — **sem varrer diretórios em tempo de execução** (lição do #3).
+`mycli list --json` — **sem varrer diretórios em tempo de execução** (lição do #3).
 
 ## Alternativas consideradas
 
-- **Pasta do usuário (`~/vox/scripts`):** flexível, mas executa código que ninguém revisou; descartada na v1.
+- **Pasta do usuário (`~/mycli/scripts`):** flexível, mas executa código que ninguém revisou; descartada na v1.
 - **Repositório/registro remoto:** atualiza sem release, mas exige assinatura, rede e confiança em outro canal; descartada na v1.
 - **Declarar o runtime no manifesto:** exigiria o autor e o usuário pensarem nisso; deduzir da extensão é suficiente.
 

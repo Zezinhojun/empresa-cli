@@ -24,7 +24,7 @@ export interface Command {
   category?: string;
   /** Só funciona com terminal interativo (ex.: menu). */
   interactive?: boolean;
-  /** De onde vem: comando da própria CLI (padrão) ou script de `vox-scripts/`. */
+  /** De onde vem: comando da própria CLI (padrão) ou script de `mycli-scripts/`. */
   kind?: 'builtin' | 'script';
   name: string;
   /** Executáveis extras que precisam estar no PATH (scripts). */

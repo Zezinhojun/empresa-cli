@@ -1,8 +1,8 @@
 import { beforeEach, vi } from 'vitest';
 
-// Os testes nunca escrevem no log de auditoria REAL (~/.vox/audit.log) de quem roda a suíte.
-// Os testes de auditoria apontam VOX_AUDIT_LOG para um arquivo temporário.
-process.env.VOX_AUDIT_LOG = 'off';
+// Os testes nunca escrevem no log de auditoria REAL (~/.mycli/audit.log) de quem roda a suíte.
+// Os testes de auditoria apontam MYCLI_AUDIT_LOG para um arquivo temporário.
+process.env.MYCLI_AUDIT_LOG = 'off';
 
 // Mock global para execa
 vi.mock('execa', () => ({

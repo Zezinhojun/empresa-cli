@@ -4,9 +4,9 @@ import { parseArgv } from './parseArgv.js';
 
 describe('parseArgv', () => {
   it('separa comando e argumentos', () => {
-    expect(parseArgv(['list-vox', 'services'])).toMatchObject({
+    expect(parseArgv(['list-files', 'services'])).toMatchObject({
       args: ['services'],
-      command: 'list-vox',
+      command: 'list-files',
     });
   });
 
@@ -31,22 +31,22 @@ describe('parseArgv', () => {
   });
 
   it('aceita flags globais antes e depois do comando e não as passa como argumento', () => {
-    const { args, command, flags } = parseArgv(['--json', 'list-vox', 'a', '--no-input', 'b']);
-    expect(command).toBe('list-vox');
+    const { args, command, flags } = parseArgv(['--json', 'list-files', 'a', '--no-input', 'b']);
+    expect(command).toBe('list-files');
     expect(args).toEqual(['a', 'b']);
     expect(flags).toMatchObject({ json: true, noInput: true });
   });
 
-  it('`vox help cmd` equivale a `cmd --help`', () => {
-    expect(parseArgv(['help', 'list-vox'])).toMatchObject({
-      command: 'list-vox',
+  it('`mycli help cmd` equivale a `cmd --help`', () => {
+    expect(parseArgv(['help', 'list-files'])).toMatchObject({
+      command: 'list-files',
       flags: { help: true },
     });
     expect(parseArgv(['help']).command).toBeUndefined();
   });
 
   it('coleta opções desconhecidas', () => {
-    expect(parseArgv(['list-vox', '--foo', '-x']).unknown).toEqual(['--foo', '-x']);
+    expect(parseArgv(['list-files', '--foo', '-x']).unknown).toEqual(['--foo', '-x']);
   });
 
   it('tudo depois de -- é literal, inclusive o que parece flag', () => {

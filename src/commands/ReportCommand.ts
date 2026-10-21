@@ -8,7 +8,7 @@ import { getRuntime } from '../cli/runtime.js';
 import { CommandRegistry } from '../core/command/CommandRegistry.js';
 import { readEntries, summarize } from '../runner/stats.js';
 
-export const REPORT_MARKER = '<!-- vox-report -->';
+export const REPORT_MARKER = '<!-- mycli-report -->';
 
 export interface ReportData {
   body: string;
@@ -33,7 +33,7 @@ export class ReportCommand implements Command {
     const stats = summarize(readEntries());
     const body = [
       REPORT_MARKER,
-      `Relatório gerado pela vox ${pkg.version}. Revise antes de enviar: só há nomes de scripts, códigos de erro, versões e sistemas.`,
+      `Relatório gerado pela mycli ${pkg.version}. Revise antes de enviar: só há nomes de scripts, códigos de erro, versões e sistemas.`,
       '',
       '```json',
       JSON.stringify(stats, null, 2),
@@ -41,8 +41,8 @@ export class ReportCommand implements Command {
     ].join('\n');
     const query = new URLSearchParams({
       body,
-      labels: 'relatorio-vox',
-      title: `Relatório de uso da vox ${pkg.version}`,
+      labels: 'relatorio-mycli',
+      title: `Relatório de uso da mycli ${pkg.version}`,
     });
     const url = `${pkg.bugs.url}/new?${query.toString()}`;
 

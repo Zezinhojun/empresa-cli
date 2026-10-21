@@ -192,13 +192,13 @@ export function readIndex(root: string): ScriptIndex | undefined {
 }
 
 /**
- * Pasta `vox-scripts/` ao lado de onde o código está rodando: `dist/index.js` (pacote instalado)
+ * Pasta `mycli-scripts/` ao lado de onde o código está rodando: `dist/index.js` (pacote instalado)
  * ou `src/...` (desenvolvimento). `undefined` se nenhuma tiver índice.
  */
 export function findScriptsRoot(fromUrl: string = import.meta.url): string | undefined {
   let dir = path.dirname(fileURLToPath(fromUrl));
   for (let level = 0; level < 4; level++) {
-    const candidate = path.join(dir, 'vox-scripts');
+    const candidate = path.join(dir, 'mycli-scripts');
     if (existsSync(path.join(candidate, INDEX_FILE))) return candidate;
     dir = path.dirname(dir);
   }

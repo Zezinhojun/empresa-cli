@@ -21,7 +21,7 @@ interface Result {
   stdout: string;
 }
 
-function vox(args: string[], env: Record<string, string> = {}, input = ''): Result {
+function mycli(args: string[], env: Record<string, string> = {}, input = ''): Result {
   const base: Record<string, string | undefined> = {
     ...process.env,
     HOME: home,
@@ -50,16 +50,16 @@ function parseJson(r: Result) {
 }
 
 beforeAll(() => {
-  home = mkdtempSync(join(tmpdir(), 'vox-contract-'));
-  mkdirSync(join(home, 'vox', 'arquitetura', 'servicos'), { recursive: true });
-  writeFileSync(join(home, 'vox', 'arquitetura', 'leia-me.txt'), 'oi');
+  home = mkdtempSync(join(tmpdir(), 'mycli-contract-'));
+  mkdirSync(join(home, 'mycli', 'files', 'servicos'), { recursive: true });
+  writeFileSync(join(home, 'mycli', 'files', 'leia-me.txt'), 'oi');
 });
 
 afterAll(() => rmSync(home, { force: true, recursive: true }));
 
 describe('sem terminal: nunca trava nem executa sozinho', () => {
-  it('`vox` sem argumentos mostra a ajuda, sai 0 e não abre menu', () => {
-    const r = vox([]);
+  it('`mycli` sem argumentos mostra a ajuda, sai 0 e não abre menu', () => {
+    const r = mycli([]);
 
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('Comandos:');
@@ -67,7 +67,7 @@ describe('sem terminal: nunca trava nem executa sozinho', () => {
   });
 
   it('mesmo recebendo Enter pelo stdin, não executa comando algum', () => {
-    const r = vox([], {}, '\n\n\n');
+    const r = mycli([], {}, '\n\n\n');
 
     expect(r.status).toBe(0);
     expect(r.stdout).not.toContain('Conteúdo de');
@@ -78,14 +78,14 @@ describe('sem terminal: nunca trava nem executa sozinho', () => {
     ['--no-input', ['--no-input'], {}],
     ['CI=true', [], { CI: 'true' }],
   ])('%s: ajuda em vez de menu', (_nome, args, env) => {
-    const r = vox(args, env);
+    const r = mycli(args, env);
 
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('Comandos:');
   });
 
-  it('`vox menu` recusa com código 2 e dica, sem abrir prompt', () => {
-    const r = vox(['menu']);
+  it('`mycli menu` recusa com código 2 e dica, sem abrir prompt', () => {
+    const r = mycli(['menu']);
 
     expect(r.status).toBe(2);
     expect(r.stdout).not.toContain('Selecione');
@@ -95,15 +95,15 @@ describe('sem terminal: nunca trava nem executa sozinho', () => {
 
 describe('sem decoração fora de terminal', () => {
   it('sem ANSI nem emoji, mesmo com FORCE_COLOR', () => {
-    for (const args of [[], ['--help'], ['list-vox'], ['list']]) {
-      const r = vox(args, { FORCE_COLOR: '3' });
-      expect(r.stdout, `vox ${args.join(' ')}`).not.toMatch(ANSI);
-      expect(r.stdout, `vox ${args.join(' ')}`).not.toMatch(EMOJI);
+    for (const args of [[], ['--help'], ['list-files'], ['list']]) {
+      const r = mycli(args, { FORCE_COLOR: '3' });
+      expect(r.stdout, `mycli ${args.join(' ')}`).not.toMatch(ANSI);
+      expect(r.stdout, `mycli ${args.join(' ')}`).not.toMatch(EMOJI);
     }
   });
 
-  it('list-vox em texto simples: pasta com "/" no fim', () => {
-    const r = vox(['list-vox']);
+  it('list-files em texto simples: pasta com "/" no fim', () => {
+    const r = mycli(['list-files']);
 
     expect(r.stdout).toContain('servicos/');
     expect(r.stdout).toContain('leia-me.txt');
@@ -111,7 +111,9 @@ describe('sem decoração fora de terminal', () => {
 
   it.each([['--plain'], ['NO_COLOR']])('%s também é respeitado', (modo) => {
     const r =
-      modo === '--plain' ? vox(['list-vox', '--plain']) : vox(['list-vox'], { NO_COLOR: '1' });
+      modo === '--plain'
+        ? mycli(['list-files', '--plain'])
+        : mycli(['list-files'], { NO_COLOR: '1' });
 
     expect(r.stdout).not.toMatch(ANSI);
     expect(r.stdout).not.toMatch(EMOJI);
@@ -120,7 +122,7 @@ describe('sem decoração fora de terminal', () => {
 
 describe('--json: uma linha em stdout, sempre', () => {
   it('é guiado pelo catálogo: todo comando não interativo e sem argumento obrigatório', () => {
-    const catalog = parseJson(vox(['list', '--json'])).data as {
+    const catalog = parseJson(mycli(['list', '--json'])).data as {
       commands: {
         args: { required: boolean }[];
         interactive: boolean;
@@ -133,7 +135,7 @@ describe('--json: uma linha em stdout, sempre', () => {
       (c) => !c.interactive && !c.args.some((a) => a.required) && c.risk === 'read',
     );
     expect(runnable.map((c) => c.name)).toEqual(
-      expect.arrayContaining(['agent-guide', 'list', 'list-vox', 'top-memory']),
+      expect.arrayContaining(['agent-guide', 'list', 'list-files', 'top-memory']),
     );
 
     for (const command of catalog.commands) {
@@ -141,7 +143,7 @@ describe('--json: uma linha em stdout, sempre', () => {
     }
 
     for (const command of runnable) {
-      const r = vox([command.name, '--json']);
+      const r = mycli([command.name, '--json']);
       const out = parseJson(r);
 
       expect(out.schemaVersion, command.name).toBe(1);
@@ -154,7 +156,7 @@ describe('--json: uma linha em stdout, sempre', () => {
   });
 
   it('comando que altera (write/destructive) NUNCA executa sem --yes: exit 4 e JSON de erro', () => {
-    const catalog = parseJson(vox(['list', '--json'])).data as {
+    const catalog = parseJson(mycli(['list', '--json'])).data as {
       commands: {
         args: { required: boolean }[];
         interactive: boolean;
@@ -167,7 +169,7 @@ describe('--json: uma linha em stdout, sempre', () => {
     );
 
     for (const command of mutating) {
-      const r = vox([command.name, '--json']);
+      const r = mycli([command.name, '--json']);
 
       expect(r.status, `${command.name} sem --yes`).toBe(4);
       expect(r.stderr, command.name).toBe('');
@@ -179,28 +181,28 @@ describe('--json: uma linha em stdout, sempre', () => {
   });
 
   it('flags globais valem antes e depois do comando', () => {
-    const antes = parseJson(vox(['--json', 'list-vox']));
-    const depois = parseJson(vox(['list-vox', '--json']));
+    const antes = parseJson(mycli(['--json', 'list-files']));
+    const depois = parseJson(mycli(['list-files', '--json']));
 
     expect(antes).toEqual(depois);
     expect(antes.ok).toBe(true);
   });
 
   it('versão e ajuda também respondem em JSON', () => {
-    expect(parseJson(vox(['--version', '--json'])).data).toMatchObject({
+    expect(parseJson(mycli(['--version', '--json'])).data).toMatchObject({
       version: expect.any(String),
     });
-    expect(parseJson(vox(['--help', '--json'])).command).toBe('help');
-    expect(parseJson(vox(['--json'])).command).toBe('help'); // sem args e sem terminal
+    expect(parseJson(mycli(['--help', '--json'])).command).toBe('help');
+    expect(parseJson(mycli(['--json'])).command).toBe('help'); // sem args e sem terminal
   });
 
   it('--help por comando descreve uso, argumentos e risco', () => {
-    const out = parseJson(vox(['list-vox', '--help', '--json']));
+    const out = parseJson(mycli(['list-files', '--help', '--json']));
 
     expect(out.data).toMatchObject({
       args: [{ name: 'subpasta', required: false }],
       risk: 'read',
-      usage: 'vox list-vox [subpasta]',
+      usage: 'mycli list-files [subpasta]',
     });
   });
 });
@@ -208,13 +210,13 @@ describe('--json: uma linha em stdout, sempre', () => {
 describe('erros: código de saída estável + JSON de erro só em stdout', () => {
   it.each([
     ['comando inexistente', ['nao-existe'], 2, 'UNKNOWN_COMMAND'],
-    ['opção desconhecida', ['list-vox', '--bogus'], 2, 'UNKNOWN_OPTION'],
-    ['argumentos demais', ['list-vox', 'a', 'b'], 2, 'INVALID_ARGUMENTS'],
+    ['opção desconhecida', ['list-files', '--bogus'], 2, 'UNKNOWN_OPTION'],
+    ['argumentos demais', ['list-files', 'a', 'b'], 2, 'INVALID_ARGUMENTS'],
     ['menu sem terminal', ['menu'], 2, 'INTERACTIVE_REQUIRED'],
-    ['subpasta fora da base', ['list-vox', '../..'], 2, 'PATH_OUTSIDE_BASE'],
-    ['pasta inexistente', ['list-vox', 'nao-existe'], 1, 'NOT_FOUND'],
+    ['subpasta fora da base', ['list-files', '../..'], 2, 'PATH_OUTSIDE_BASE'],
+    ['pasta inexistente', ['list-files', 'nao-existe'], 1, 'NOT_FOUND'],
   ])('%s → exit %i (%s)', (_nome, args, status, code) => {
-    const r = vox([...args, '--json']);
+    const r = mycli([...args, '--json']);
 
     expect(r.status).toBe(status);
     expect(r.stderr).toBe('');
@@ -222,7 +224,7 @@ describe('erros: código de saída estável + JSON de erro só em stdout', () =>
   });
 
   it('em texto, o erro vai para stderr e stdout fica vazio', () => {
-    const r = vox(['nao-existe']);
+    const r = mycli(['nao-existe']);
 
     expect(r.status).toBe(2);
     expect(r.stdout).toBe('');
@@ -230,7 +232,7 @@ describe('erros: código de saída estável + JSON de erro só em stdout', () =>
   });
 
   it('`--` entrega o argumento literal (não vira flag)', () => {
-    const r = vox(['list-vox', '--json', '--', '--json']);
+    const r = mycli(['list-files', '--json', '--', '--json']);
 
     // "--json" depois de "--" é uma subpasta (inexistente), não a flag
     expect(parseJson(r).error?.code).toBe('NOT_FOUND');

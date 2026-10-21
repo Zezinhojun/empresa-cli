@@ -58,7 +58,7 @@ export class MenuCommand implements Command {
         'O menu precisa de um terminal interativo.',
         ExitCode.usage,
         'INTERACTIVE_REQUIRED',
-        "Use 'vox --help' para ver os comandos e rode o que precisar direto (ex.: vox list-vox).",
+        "Use 'mycli --help' para ver os comandos e rode o que precisar direto (ex.: mycli list-files).",
       );
     }
 

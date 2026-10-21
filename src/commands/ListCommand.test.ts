@@ -38,7 +38,7 @@ describe('ListCommand', () => {
       name: 'zeta',
       requires: [],
       risk: 'write',
-      usage: 'vox zeta <alvo>',
+      usage: 'mycli zeta <alvo>',
     });
   });
 
