@@ -40,6 +40,7 @@
     "start": "node dist/index.js",
     "contract": "npm run build && vitest run --config vitest.contract.config.ts",
     "scripts:index": "tsx scripts/build-scripts-index.ts",
+    "backlog": "tsx scripts/backlog.ts",
     "smoke": "node scripts/smoke.mjs",
     "typecheck": "tsc --noEmit",
     "prepack": "npm run build",
