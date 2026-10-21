@@ -61,3 +61,12 @@ describe('parseArgv', () => {
     expect(parseArgv(['cat', '-']).args).toEqual(['-']);
   });
 });
+
+describe('parseArgv: --confirm=', () => {
+  it('guarda o valor e não o trata como opção desconhecida', () => {
+    const parsed = parseArgv(['limpar', '--confirm=meu-projeto', '--yes']);
+    expect(parsed.flags).toMatchObject({ confirm: 'meu-projeto', yes: true });
+    expect(parsed.unknown).toEqual([]);
+    expect(parsed.args).toEqual([]);
+  });
+});

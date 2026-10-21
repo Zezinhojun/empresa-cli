@@ -12,6 +12,7 @@ import { newEntry, writeAudit } from '../runner/audit.js';
 import { buildScriptEnv } from '../runner/env.js';
 import { runScript, type ScriptRun } from '../runner/runScript.js';
 import { verifyDirectory } from '../runner/scriptIndex.js';
+import { resolveTarget } from '../runner/target.js';
 import { which } from '../runner/which.js';
 
 const SYSTEM_NAME: Record<string, string> = { darwin: 'macOS', linux: 'Linux', win32: 'Windows' };
@@ -20,11 +21,13 @@ export interface ScriptResult {
   command?: string[];
   dryRun: boolean;
   durationMs: number;
+  effects?: string[];
   exitCode: number | null;
   runtime: ScriptRun['runtime'];
   script: string;
   stderr?: string;
   stdout?: string;
+  target?: string;
 }
 
 /** Como cada erro conhecido aparece no log de auditoria. */
@@ -32,6 +35,7 @@ const OUTCOME_BY_CODE: Record<string, AuditOutcome> = {
   CANCELLED: 'cancelled',
   CONFIRMATION_REQUIRED: 'denied',
   INTEGRITY_ERROR: 'blocked',
+  INVALID_TARGET: 'blocked',
   MISSING_REQUIREMENT: 'blocked',
   MISSING_RUNTIME: 'blocked',
   SCRIPT_FAILED: 'failed',
@@ -72,6 +76,8 @@ export class ScriptCommand implements Command {
   async execute(args: string[] = []): Promise<ScriptResult> {
     const started = Date.now();
     const runtime = getRuntime();
+    const ctx: { target?: string } = {};
+    const { effects } = this.manifest;
     const record = (
       outcome: AuditOutcome,
       extra: { errorCode?: string; exitCode: number | null; scriptRuntime?: string },
@@ -80,6 +86,7 @@ export class ScriptCommand implements Command {
         newEntry({
           args,
           durationMs: Date.now() - started,
+          ...(effects.length > 0 && { effects }),
           ...(extra.errorCode && { errorCode: extra.errorCode }),
           exitCode: extra.exitCode,
           interactive: runtime.interactive,
@@ -87,13 +94,14 @@ export class ScriptCommand implements Command {
           risk: this.risk,
           ...(extra.scriptRuntime && { runtime: extra.scriptRuntime }),
           script: this.name,
+          ...(ctx.target && { target: ctx.target }),
           version: pkg.version,
           yes: runtime.yes,
         }),
       );
 
     try {
-      const result = await this.run(args);
+      const result = await this.run(args, ctx);
       record(result.dryRun ? 'dry-run' : 'ok', {
         exitCode: result.exitCode,
         scriptRuntime: result.runtime,
@@ -113,12 +121,16 @@ export class ScriptCommand implements Command {
 
   /** Em modo humano o script já escreveu a própria saída; só o --dry-run precisa de texto. */
   format(data: ScriptResult) {
-    return data.dryRun && data.command ? `Executaria: ${data.command.join(' ')}` : '';
+    if (!data.dryRun || !data.command) return '';
+    const lines = [`Executaria: ${data.command.join(' ')}`];
+    if (data.target) lines.push(`Pasta alvo: ${data.target}`);
+    if (data.effects?.length) lines.push(`Efeitos: ${data.effects.join(', ')}`);
+    return lines.join('\n');
   }
 
-  private async run(args: string[]): Promise<ScriptResult> {
-    const { dryRun, interactive, json, yes } = getRuntime();
-    const { entry, name, os, requires, risk, timeoutSec } = this.manifest;
+  private async run(args: string[], ctx: { target?: string }): Promise<ScriptResult> {
+    const { confirm, dryRun, interactive, json, yes } = getRuntime();
+    const { effects, entry, name, os, requires, risk, timeoutSec } = this.manifest;
 
     // 0) Os arquivos instalados são exatamente os que foram revisados e empacotados?
     //    Roda ANTES de qualquer outra coisa: um script alterado não é nem inspecionado.
@@ -157,13 +169,45 @@ export class ScriptCommand implements Command {
       );
     }
 
-    // 3) Quem altera algo pede confirmação (agentes precisam passar --yes; senão, código 4).
+    // 3) Quem apaga ou instala tem um alvo (a pasta atual) que precisa ser um projeto de verdade (ADR 0003).
+    const removes = effects.filter((e) => e.startsWith('delete:')).map((e) => e.slice(7));
+    if (
+      risk === 'destructive' ||
+      removes.length > 0 ||
+      effects.some((e) => e.startsWith('install:'))
+    ) {
+      try {
+        ctx.target = resolveTarget(process.cwd(), removes);
+      } catch (error) {
+        throw new CliError(
+          `O comando '${name}' não foi executado: ${(error as Error).message}`,
+          ExitCode.usage,
+          'INVALID_TARGET',
+          'Rode a vox de dentro da pasta do projeto.',
+          { cwd: process.cwd() },
+        );
+      }
+    }
+
+    // 4) Quem altera algo pede confirmação (agentes precisam passar --yes; senão, código 4).
     // Em --dry-run nada é executado, então não há o que confirmar.
     if (risk !== 'read' && !dryRun) {
+      const where = ctx.target ? ` em ${ctx.target}` : '';
+      const what = effects.length > 0 ? ` Efeitos: ${effects.join(', ')}.` : '';
       const warning =
         risk === 'destructive'
-          ? `'${name}' pode APAGAR ou sobrescrever dados. Continuar?`
-          : `'${name}' vai alterar coisas neste computador. Continuar?`;
+          ? `'${name}' pode APAGAR ou sobrescrever dados${where}.${what} Continuar?`
+          : `'${name}' vai alterar coisas neste computador${where}.${what} Continuar?`;
+      const folder = ctx.target ? path.basename(ctx.target) : '';
+      if (risk === 'destructive' && !interactive && !(yes && confirm === folder)) {
+        throw new CliError(
+          `Confirmação necessária: ${warning}`,
+          ExitCode.needsConfirmation,
+          'CONFIRMATION_REQUIRED',
+          `Sem terminal, confirme digitando o nome da pasta alvo: --yes --confirm=${folder}`,
+          { target: ctx.target },
+        );
+      }
       if (!(await confirmAction(warning))) {
         throw new CliError('Operação cancelada.', ExitCode.error, 'CANCELLED');
       }
@@ -193,6 +237,8 @@ export class ScriptCommand implements Command {
       exitCode: run.exitCode,
       runtime: run.runtime,
       script: name,
+      ...(effects.length > 0 && { effects }),
+      ...(ctx.target && { target: ctx.target }),
       ...(run.dryRun && { command: run.command }),
       ...(run.stdout !== undefined && { stdout: run.stdout }),
       ...(run.stderr !== undefined && { stderr: run.stderr }),

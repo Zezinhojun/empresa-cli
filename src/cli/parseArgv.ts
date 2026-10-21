@@ -1,4 +1,6 @@
 export interface GlobalFlags {
+  /** `--confirm=<pasta alvo>`: confirmação de script `destructive` sem terminal (ADR 0003). */
+  confirm?: string | undefined;
   dryRun: boolean;
   help: boolean;
   json: boolean;
@@ -18,7 +20,7 @@ export interface ParsedArgv {
   unknown: string[];
 }
 
-const FLAG_NAMES: Record<string, keyof GlobalFlags> = {
+const FLAG_NAMES: Record<string, Exclude<keyof GlobalFlags, 'confirm'>> = {
   '--dry-run': 'dryRun',
   '--help': 'help',
   '--json': 'json',
@@ -54,6 +56,10 @@ export function parseArgv(argv: string[]): ParsedArgv {
     if (token === '--') {
       rest.push(...argv.slice(index + 1));
       break;
+    }
+    if (token.startsWith('--confirm=')) {
+      flags.confirm = token.slice('--confirm='.length);
+      continue;
     }
     const flag = FLAG_NAMES[token];
     if (flag) flags[flag] = true;

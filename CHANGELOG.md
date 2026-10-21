@@ -26,6 +26,7 @@ Será a **1.0.0** (primeira publicação).
 - `vox doctor` e mensagens claras para dependência ausente e erros comuns.
 - Segurança do runner ([docs/security/runner.md](docs/security/runner.md)): integridade SHA-256 dos scripts antes de executar (`INTEGRITY_ERROR`), log de auditoria em `~/.vox/audit.log` e modelo de ameaças.
 - CI: testa a CLI sem Bash nem Python e no Node 20 e 24; actions pinadas por SHA, `npm audit` e dependabot.
+- Scripts `destructive`: `effects` no manifesto (informativo), alvo validado (precisa ser um projeto, nunca `~`, raiz ou pasta do sistema) e, sem terminal, `--yes --confirm=<pasta alvo>`; `effects` e alvo vão para o `audit.log` ([ADR 0003](docs/adr/0003-permissoes-scripts-destrutivos.md)).
 
 ### Corrigido
 

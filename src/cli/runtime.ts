@@ -2,6 +2,8 @@ import type { GlobalFlags } from './parseArgv.js';
 
 /** Como a CLI está sendo usada nesta execução (pessoa no terminal × agente/CI/pipe). */
 export interface Runtime {
+  /** Nome da pasta alvo digitado em `--confirm=`; exigido por script `destructive` sem terminal. */
+  confirm?: string | undefined;
   /** Mostra o que seria executado, sem executar (scripts). */
   dryRun: boolean;
   /** Pode abrir prompts? Só com terminal de verdade e sem --no-input/--json/CI. */
@@ -24,7 +26,7 @@ interface Tty {
 }
 
 export function resolveRuntime(
-  flags: Pick<GlobalFlags, 'dryRun' | 'json' | 'noInput' | 'plain' | 'verbose' | 'yes'>,
+  flags: Pick<GlobalFlags, 'confirm' | 'dryRun' | 'json' | 'noInput' | 'plain' | 'verbose' | 'yes'>,
   env: Env = process.env,
   stdin: Tty = process.stdin,
   stdout: Tty = process.stdout,
@@ -33,6 +35,7 @@ export function resolveRuntime(
   const terminal = Boolean(stdin.isTTY && stdout.isTTY);
 
   return {
+    confirm: flags.confirm,
     dryRun: flags.dryRun,
     interactive: terminal && !flags.noInput && !flags.json && !ci,
     json: flags.json,
