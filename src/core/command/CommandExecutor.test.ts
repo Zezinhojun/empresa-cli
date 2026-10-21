@@ -20,7 +20,7 @@ describe('CommandExecutor', () => {
     const cmd: Command = { execute: executeFn, name: 'test' };
     registry.register(cmd);
 
-    await executor.execute('test', ['arg1', 'arg2']);
+    await expect(executor.execute('test', ['arg1', 'arg2'])).resolves.toBe(true);
 
     expect(executeFn).toHaveBeenCalledWith(['arg1', 'arg2']);
   });
@@ -38,9 +38,9 @@ describe('CommandExecutor', () => {
   it('não executa e loga erro para comando inexistente', async () => {
     const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
-    await executor.execute('inexistente');
+    await expect(executor.execute('inexistente')).resolves.toBe(false);
 
-    expect(consoleSpy).toHaveBeenCalledWith('Comando inexistente náo encontrado');
+    expect(consoleSpy).toHaveBeenCalledWith('Comando inexistente não encontrado');
     consoleSpy.mockRestore();
   });
 
@@ -51,5 +51,15 @@ describe('CommandExecutor', () => {
     registry.register(cmd);
 
     await expect(executor.execute('fails')).rejects.toThrow('Command failed');
+  });
+
+  it('imprime os dados devolvidos pelo comando (formato humano)', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    registry.register({ execute: () => 'resultado', name: 'dados' });
+
+    await executor.execute('dados');
+
+    expect(logSpy).toHaveBeenCalledWith('resultado');
+    logSpy.mockRestore();
   });
 });

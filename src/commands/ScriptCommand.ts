@@ -1,0 +1,247 @@
+import path from 'node:path';
+
+import type { Command, CommandArg } from '../core/command/Command.js';
+import type { AuditOutcome } from '../runner/audit.js';
+import type { Manifest } from '../runner/manifest.js';
+
+import pkg from '../../package.json' with { type: 'json' };
+import { confirmAction } from '../cli/confirm.js';
+import { CliError, ExitCode } from '../cli/errors.js';
+import { getRuntime } from '../cli/runtime.js';
+import { newEntry, writeAudit } from '../runner/audit.js';
+import { buildScriptEnv } from '../runner/env.js';
+import { runScript, type ScriptRun } from '../runner/runScript.js';
+import { verifyDirectory } from '../runner/scriptIndex.js';
+import { resolveTarget } from '../runner/target.js';
+import { which } from '../runner/which.js';
+
+const SYSTEM_NAME: Record<string, string> = { darwin: 'macOS', linux: 'Linux', win32: 'Windows' };
+
+export interface ScriptResult {
+  command?: string[];
+  dryRun: boolean;
+  durationMs: number;
+  effects?: string[];
+  exitCode: number | null;
+  runtime: ScriptRun['runtime'];
+  script: string;
+  stderr?: string;
+  stdout?: string;
+  target?: string;
+}
+
+/** Como cada erro conhecido aparece no log de auditoria. */
+const OUTCOME_BY_CODE: Record<string, AuditOutcome> = {
+  CANCELLED: 'cancelled',
+  CONFIRMATION_REQUIRED: 'denied',
+  INTEGRITY_ERROR: 'blocked',
+  INVALID_TARGET: 'blocked',
+  MISSING_REQUIREMENT: 'blocked',
+  MISSING_RUNTIME: 'blocked',
+  SCRIPT_FAILED: 'failed',
+  SCRIPT_TIMEOUT: 'timeout',
+  UNSUPPORTED_OS: 'blocked',
+};
+
+/** Um script de `mycli-scripts/` exposto como comando da CLI (menu, --help, mycli list --json). */
+export class ScriptCommand implements Command {
+  public readonly args: CommandArg[];
+  public readonly category?: string;
+  public readonly description: string;
+  public readonly kind = 'script' as const;
+  public readonly name: string;
+  public readonly requires: string[];
+  public readonly risk: Manifest['risk'];
+
+  constructor(
+    private readonly manifest: Manifest,
+    /** Pasta onde o script e seus arquivos de apoio estão instalados. */
+    private readonly dir: string,
+    /** SHA-256 esperado de cada arquivo da pasta (do índice gerado no build). */
+    private readonly files: Record<string, string>,
+  ) {
+    this.args = manifest.args.map(({ description, name, required }) => ({
+      description,
+      name,
+      required,
+    }));
+    if (manifest.category) this.category = manifest.category;
+    this.description = manifest.description;
+    this.name = manifest.name;
+    this.requires = manifest.requires;
+    this.risk = manifest.risk;
+  }
+
+  /** Toda tentativa (inclusive as negadas e bloqueadas) fica no log de auditoria local. */
+  async execute(args: string[] = []): Promise<ScriptResult> {
+    const started = Date.now();
+    const runtime = getRuntime();
+    const ctx: { target?: string } = {};
+    const { effects } = this.manifest;
+    const record = (
+      outcome: AuditOutcome,
+      extra: { errorCode?: string; exitCode: number | null; scriptRuntime?: string },
+    ) =>
+      writeAudit(
+        newEntry({
+          args,
+          durationMs: Date.now() - started,
+          ...(effects.length > 0 && { effects }),
+          ...(extra.errorCode && { errorCode: extra.errorCode }),
+          exitCode: extra.exitCode,
+          interactive: runtime.interactive,
+          outcome,
+          risk: this.risk,
+          ...(extra.scriptRuntime && { runtime: extra.scriptRuntime }),
+          script: this.name,
+          ...(ctx.target && { target: ctx.target }),
+          version: pkg.version,
+          yes: runtime.yes,
+        }),
+      );
+
+    try {
+      const result = await this.run(args, ctx);
+      record(result.dryRun ? 'dry-run' : 'ok', {
+        exitCode: result.exitCode,
+        scriptRuntime: result.runtime,
+      });
+      return result;
+    } catch (error) {
+      const code = error instanceof CliError ? error.code : 'ERROR';
+      const details = error instanceof CliError ? error.details : undefined;
+      const exitCode =
+        typeof (details as { exitCode?: unknown } | undefined)?.exitCode === 'number'
+          ? (details as { exitCode: number }).exitCode
+          : null;
+      record(OUTCOME_BY_CODE[code] ?? 'error', { errorCode: code, exitCode });
+      throw error;
+    }
+  }
+
+  /** Em modo humano o script já escreveu a própria saída; só o --dry-run precisa de texto. */
+  format(data: ScriptResult) {
+    if (!data.dryRun || !data.command) return '';
+    const lines = [`Executaria: ${data.command.join(' ')}`];
+    if (data.target) lines.push(`Pasta alvo: ${data.target}`);
+    if (data.effects?.length) lines.push(`Efeitos: ${data.effects.join(', ')}`);
+    return lines.join('\n');
+  }
+
+  private async run(args: string[], ctx: { target?: string }): Promise<ScriptResult> {
+    const { confirm, dryRun, interactive, json, yes } = getRuntime();
+    const { effects, entry, name, os, requires, risk, timeoutSec } = this.manifest;
+
+    // 0) Os arquivos instalados são exatamente os que foram revisados e empacotados?
+    //    Roda ANTES de qualquer outra coisa: um script alterado não é nem inspecionado.
+    const integrity = verifyDirectory(this.dir, this.files);
+    if (!integrity.ok) {
+      const { changed, extra, missing, symlinks } = integrity;
+      throw new CliError(
+        `Os arquivos do comando '${name}' foram alterados depois da instalação e ele não foi executado.`,
+        ExitCode.error,
+        'INTEGRITY_ERROR',
+        'Reinstale a mycli para restaurar os arquivos originais: npm install -g mycli',
+        { changed, extra, missing, symlinks },
+      );
+    }
+
+    // 1) Compatível com este sistema?
+    if (os.length > 0 && !os.includes(process.platform)) {
+      throw new CliError(
+        `O comando '${name}' não funciona no ${SYSTEM_NAME[process.platform] ?? process.platform}.`,
+        ExitCode.missingDependency,
+        'UNSUPPORTED_OS',
+        `Ele funciona em: ${os.map((system) => SYSTEM_NAME[system] ?? system).join(', ')}.`,
+        { os, platform: process.platform },
+      );
+    }
+
+    // 2) Tem o que o script usa (docker, git…)?
+    const missing = requires.filter((executable) => !which(executable));
+    if (missing.length > 0) {
+      throw new CliError(
+        `O comando '${name}' precisa d${missing.length > 1 ? 'os programas' : 'o programa'} ${missing.join(', ')}, que não ${missing.length > 1 ? 'estão instalados' : 'está instalado'} neste computador.`,
+        ExitCode.missingDependency,
+        'MISSING_REQUIREMENT',
+        `Instale ${missing.join(' e ')} e abra um novo terminal.`,
+        { missing },
+      );
+    }
+
+    // 3) Quem apaga ou instala tem um alvo (a pasta atual) que precisa ser um projeto de verdade (ADR 0003).
+    const removes = effects.filter((e) => e.startsWith('delete:')).map((e) => e.slice(7));
+    if (
+      risk === 'destructive' ||
+      removes.length > 0 ||
+      effects.some((e) => e.startsWith('install:'))
+    ) {
+      try {
+        ctx.target = resolveTarget(process.cwd(), removes);
+      } catch (error) {
+        throw new CliError(
+          `O comando '${name}' não foi executado: ${(error as Error).message}`,
+          ExitCode.usage,
+          'INVALID_TARGET',
+          'Rode a mycli de dentro da pasta do projeto.',
+          { cwd: process.cwd() },
+        );
+      }
+    }
+
+    // 4) Quem altera algo pede confirmação (agentes precisam passar --yes; senão, código 4).
+    // Em --dry-run nada é executado, então não há o que confirmar.
+    if (risk !== 'read' && !dryRun) {
+      const where = ctx.target ? ` em ${ctx.target}` : '';
+      const what = effects.length > 0 ? ` Efeitos: ${effects.join(', ')}.` : '';
+      const warning =
+        risk === 'destructive'
+          ? `'${name}' pode APAGAR ou sobrescrever dados${where}.${what} Continuar?`
+          : `'${name}' vai alterar coisas neste computador${where}.${what} Continuar?`;
+      const folder = ctx.target ? path.basename(ctx.target) : '';
+      if (risk === 'destructive' && !interactive && !(yes && confirm === folder)) {
+        throw new CliError(
+          `Confirmação necessária: ${warning}`,
+          ExitCode.needsConfirmation,
+          'CONFIRMATION_REQUIRED',
+          `Sem terminal, confirme digitando o nome da pasta alvo: --yes --confirm=${folder}`,
+          { target: ctx.target },
+        );
+      }
+      if (!(await confirmAction(warning))) {
+        throw new CliError('Operação cancelada.', ExitCode.error, 'CANCELLED');
+      }
+    }
+
+    const run = await runScript({
+      args,
+      capture: json,
+      cwd: process.cwd(),
+      dryRun,
+      entry: path.join(this.dir, entry),
+      env: buildScriptEnv(process.env, {
+        MYCLI_JSON: json ? '1' : '0',
+        MYCLI_NO_INPUT: interactive ? '0' : '1',
+        MYCLI_SCRIPT_DIR: this.dir,
+        MYCLI_VERSION: pkg.version,
+        MYCLI_YES: yes ? '1' : '0',
+      }),
+      interactive,
+      name,
+      timeoutSec,
+    });
+
+    return {
+      dryRun: run.dryRun,
+      durationMs: run.durationMs,
+      exitCode: run.exitCode,
+      runtime: run.runtime,
+      script: name,
+      ...(effects.length > 0 && { effects }),
+      ...(ctx.target && { target: ctx.target }),
+      ...(run.dryRun && { command: run.command }),
+      ...(run.stdout !== undefined && { stdout: run.stdout }),
+      ...(run.stderr !== undefined && { stderr: run.stderr }),
+    };
+  }
+}

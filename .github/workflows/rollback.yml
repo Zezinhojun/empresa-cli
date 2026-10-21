@@ -1,0 +1,39 @@
+name: Rollback latest
+
+# Manual. Aponta `latest` de volta para uma versão estável anterior.
+# Não despublica nada (npm unpublish é proibido); deprecie a versão ruim com:
+#   npm deprecate mycli@<versão> "motivo"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão estável que volta a ser latest (ex.: 1.0.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    environment: production # revisor obrigatório
+    env:
+      VERSION: ${{ inputs.version }}
+      ENABLED: ${{ vars.NPM_PUBLISH_ENABLED }}
+    steps:
+      - name: Publicação habilitada?
+        run: |
+          [ "$ENABLED" = "true" ] || { echo "::error::Defina NPM_PUBLISH_ENABLED=true"; exit 1; }
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          registry-url: https://registry.npmjs.org
+      - name: dist-tag latest
+        run: |
+          case "$VERSION" in *-*) echo "::error::use uma versão estável (X.Y.Z)"; exit 1 ;; esac
+          npm dist-tag add "mycli@$VERSION" latest
+          npm dist-tag ls mycli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

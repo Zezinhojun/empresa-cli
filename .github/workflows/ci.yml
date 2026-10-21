@@ -1,27 +1,54 @@
-name: CI - VOX CLI
+name: CI - MYCLI CLI
 
 on:
   pull_request:
-    branches: [main, master]
+    branches: [develop, master]
   push:
-    branches: [main, master]
+    branches: [develop, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # ─── Stage 1: PR ────────────────────────────────────────────────────────────
   lint:
     uses: ./.github/workflows/lint.yml
 
   test:
-    needs: lint
     uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+      pull-requests: write
 
-  # ─── Stage 2: Merge ─────────────────────────────────────────────────────────
+  # Vulnerabilidades em dependências de PRODUÇÃO (devDependencies não vão no pacote).
+  audit:
+    name: npm audit (produção)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - run: npm audit --omit=dev --audit-level=high
+
+  # Gera e valida (smoke) o tarball que será publicado. Em push na develop a
+  # versão recebe o sufixo -staging.<run_number>.
   build:
-    needs: test
-    if: github.event_name == 'push'
+    needs: [lint, test]
     uses: ./.github/workflows/build.yml
+    with:
+      staging: ${{ github.event_name == 'push' && github.ref == 'refs/heads/develop' }}
 
-  publish:
-    needs: build
-    if: github.event_name == 'push'
+  # Só roda na develop e só quando NPM_PUBLISH_ENABLED=true (variável do repo).
+  # Produção nunca passa por aqui: ver promote.yml.
+  publish-staging:
+    needs: [build, audit]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/develop' && vars.NPM_PUBLISH_ENABLED == 'true'
     uses: ./.github/workflows/publish.yml
+    permissions:
+      contents: read
+      id-token: write # o publish.yml usa para provenance
+    secrets: inherit

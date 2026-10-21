@@ -2,16 +2,50 @@ name: Build
 
 on:
   workflow_call:
+    inputs:
+      staging:
+        description: 'Adiciona o sufixo -staging.<run_number> à versão do pacote'
+        type: boolean
+        default: false
 
 jobs:
   build:
-    name: Build CLI (Node 22 LTS)
-    runs-on: ubuntu-latest
+    # O Node 22 mantém o nome antigo (é o check exigido pela proteção de branch); os extras mostram a versão.
+    name: Build + smoke (${{ matrix.os }}${{ matrix.node-version != '22' && format(', Node {0}', matrix.node-version) || '' }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ['22']
+        include:
+          # extremos do "engines" (>=20 <25): o pacote tem de funcionar nos dois
+          - os: ubuntu-latest
+            node-version: '20'
+          - os: ubuntu-latest
+            node-version: '24'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: '22'
+          node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
-      - run: npm run build
+      - name: Versão de staging
+        if: inputs.staging
+        shell: bash
+        run: npm version "$(node -p "require('./package.json').version")-staging.${{ github.run_number }}" --no-git-tag-version
+      - name: Smoke test do pacote instalado
+        run: npm run smoke
+      - name: Contrato de uso por agentes (sem TTY, --json, exit codes)
+        run: npm run contract
+      - name: Empacota o artefato publicável
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '22'
+        shell: bash
+        run: mkdir -p out && npm pack --pack-destination out
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == '22'
+        with:
+          name: package-tgz
+          path: out/*.tgz
+          if-no-files-found: error

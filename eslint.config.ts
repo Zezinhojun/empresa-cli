@@ -11,7 +11,7 @@ import * as tseslint from 'typescript-eslint';
 export default defineConfig([
   /* =========================================================
    * TYPE SCRIPT LAYER (CLI CORE)
-   * Regras principais para código TypeScript da CLI VOX
+   * Regras principais para código TypeScript da CLI MYCLI
    * ========================================================= */
   {
     // Base recomendada do TypeScript ESLint

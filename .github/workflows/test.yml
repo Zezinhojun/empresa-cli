@@ -5,22 +5,26 @@ on:
 
 jobs:
   test:
-    name: Tests (Node ${{ matrix.node-version }})
-    runs-on: ubuntu-latest
+    name: Tests (${{ matrix.os }}, Node ${{ matrix.node-version }})
+    runs-on: ${{ matrix.os }}
     strategy:
-      matrix:
-        node-version: ['20', '22', '24']
       fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node-version: ['20', '24']
+        include:
+          - os: ubuntu-latest
+            node-version: '22'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
       - run: npm ci
       - run: npm run test:ci
       - name: Comment coverage on PR
-        if: github.event_name == 'pull_request'
-        uses: davelosert/vitest-coverage-report-action@v2
+        if: github.event_name == 'pull_request' && matrix.os == 'ubuntu-latest' && matrix.node-version == '22'
+        uses: davelosert/vitest-coverage-report-action@c4bbc33a89b7ace0e63d35f1f7d4bcee31155a73 # v2
         with:
           json-summary-path: coverage/coverage-summary.json

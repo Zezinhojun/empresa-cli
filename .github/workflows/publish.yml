@@ -1,12 +1,37 @@
-name: Publish
+name: Publish (staging)
+
+# Reutilizável: chamado pelo ci.yml após build + smoke, só na develop e só com
+# a variável de repositório NPM_PUBLISH_ENABLED=true. Publica o MESMO tarball
+# validado no job build (artefato package-tgz) sob a dist-tag "staging".
 
 on:
   workflow_call:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-staging
+  cancel-in-progress: false
+
 jobs:
   publish:
-    name: Publish
+    name: npm publish --tag staging
     runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      contents: read
+      id-token: write # provenance (e trusted publishing, se configurado no npm)
     steps:
-      - name: Publish placeholder
-        run: echo "🚀 Publish step - to be implemented"
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: package-tgz
+          path: pkg
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          registry-url: https://registry.npmjs.org
+      - name: Publica na dist-tag staging
+        run: npm publish pkg/*.tgz --tag staging --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

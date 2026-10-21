@@ -1,0 +1,6 @@
+# Código que executa coisas na máquina dos usuários: sempre com revisão do dono.
+/mycli-scripts/            @OWNER
+/src/runner/             @OWNER
+/src/commands/Script*    @OWNER
+/.github/workflows/      @OWNER
+/docs/security/          @OWNER

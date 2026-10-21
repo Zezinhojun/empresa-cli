@@ -1,5 +1,9 @@
 import { beforeEach, vi } from 'vitest';
 
+// Os testes nunca escrevem no log de auditoria REAL (~/.mycli/audit.log) de quem roda a suíte.
+// Os testes de auditoria apontam MYCLI_AUDIT_LOG para um arquivo temporário.
+process.env.MYCLI_AUDIT_LOG = 'off';
+
 // Mock global para execa
 vi.mock('execa', () => ({
   execa: vi.fn(),
@@ -17,6 +21,9 @@ vi.mock('@inquirer/prompts', () => ({
   password: vi.fn(),
   search: vi.fn(),
   select: vi.fn(),
+  Separator: class Separator {
+    constructor(public readonly separator?: string) {}
+  },
 }));
 
 // Mock global para chalk - proxy que retorna a string para qualquer propriedade/função
@@ -32,16 +39,6 @@ vi.mock('chalk', () => {
   const mock = createChalkMock();
   return { default: mock, ...mock };
 });
-
-// Mock global para ora (spinner)
-vi.mock('ora', () => ({
-  default: vi.fn(() => ({
-    fail: vi.fn().mockReturnThis(),
-    start: vi.fn().mockReturnThis(),
-    stop: vi.fn().mockReturnThis(),
-    succeed: vi.fn().mockReturnThis(),
-  })),
-}));
 
 // Limpeza automática entre testes
 beforeEach(() => {
