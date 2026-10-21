@@ -157,14 +157,14 @@ describe('parseManifest', () => {
   it('reúne TODOS os problemas de uma vez e cita a origem', () => {
     let error: ManifestError | undefined;
     try {
-      parseManifest({ entry: 'a.rb', riks: 1, risk: 'x' }, 'vox-scripts/ruim/manifest.json');
+      parseManifest({ entry: 'a.rb', riks: 1, risk: 'x' }, 'mycli-scripts/ruim/manifest.json');
     } catch (e) {
       error = e as ManifestError;
     }
 
     expect(error?.problems.length).toBeGreaterThanOrEqual(5);
-    expect(error?.source).toBe('vox-scripts/ruim/manifest.json');
-    expect(error?.message).toContain('vox-scripts/ruim/manifest.json');
+    expect(error?.source).toBe('mycli-scripts/ruim/manifest.json');
+    expect(error?.message).toContain('mycli-scripts/ruim/manifest.json');
     expect(error?.message).toContain('- campo desconhecido "riks"');
     expect(error?.name).toBe('ManifestError');
   });

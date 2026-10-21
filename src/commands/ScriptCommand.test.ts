@@ -40,8 +40,8 @@ const command = (extra: Record<string, unknown> = {}) =>
 let out: string;
 
 beforeAll(() => {
-  out = mkdtempSync(path.join(tmpdir(), 'vox-script-out-'));
-  dir = mkdtempSync(path.join(tmpdir(), 'vox-script-'));
+  out = mkdtempSync(path.join(tmpdir(), 'mycli-script-out-'));
+  dir = mkdtempSync(path.join(tmpdir(), 'mycli-script-'));
   mkdirSync(path.join(dir, 'x'));
   writeFileSync(
     path.join(dir, 'run.js'),
@@ -107,32 +107,32 @@ describe('ScriptCommand.execute (risk: read)', () => {
     expect(result.command).toBeUndefined();
   });
 
-  it('entrega as variáveis VOX_* e NÃO vaza segredos do ambiente do usuário', async () => {
-    process.env.VOX_TESTE_SEGREDO = 'nao-vazar';
+  it('entrega as variáveis MYCLI_* e NÃO vaza segredos do ambiente do usuário', async () => {
+    process.env.MYCLI_TESTE_SEGREDO = 'nao-vazar';
     setRuntime({ ...agent, yes: true });
 
     const { stdout } = await command().execute();
-    delete process.env.VOX_TESTE_SEGREDO;
+    delete process.env.MYCLI_TESTE_SEGREDO;
     const env = JSON.parse(stdout ?? '').env as Record<string, string>;
 
     expect(env).toMatchObject({
-      VOX_JSON: '1',
-      VOX_NO_INPUT: '1',
-      VOX_SCRIPT_DIR: dir,
-      VOX_VERSION: pkg.version,
-      VOX_YES: '1',
+      MYCLI_JSON: '1',
+      MYCLI_NO_INPUT: '1',
+      MYCLI_SCRIPT_DIR: dir,
+      MYCLI_VERSION: pkg.version,
+      MYCLI_YES: '1',
     });
-    expect(env.VOX_TESTE_SEGREDO).toBeUndefined();
+    expect(env.MYCLI_TESTE_SEGREDO).toBeUndefined();
   });
 
-  it('com terminal interativo: VOX_NO_INPUT=0 e VOX_JSON=0', async () => {
+  it('com terminal interativo: MYCLI_NO_INPUT=0 e MYCLI_JSON=0', async () => {
     // json=true só para capturar; interativo é o que interessa ao script
     setRuntime({ ...person, json: true });
     // (json desliga o interativo na CLI real; aqui forçamos o runtime para observar as variáveis)
     const { stdout } = await command().execute();
     const env = JSON.parse(stdout ?? '').env as Record<string, string>;
 
-    expect(env.VOX_NO_INPUT).toBe('0');
+    expect(env.MYCLI_NO_INPUT).toBe('0');
   });
 
   it('roda no diretório de onde o usuário chamou', async () => {

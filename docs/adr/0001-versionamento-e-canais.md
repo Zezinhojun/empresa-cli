@@ -14,8 +14,8 @@ A CLI será publicada no npm. O requisito é publicar **primeiro em staging**, v
 
 | Canal    | dist-tag  | Versão publicada  | Origem                 | Instalação                 |
 | -------- | --------- | ----------------- | ---------------------- | -------------------------- |
-| staging  | `staging` | `X.Y.Z-staging.N` | push na `develop`      | `npm i -g cli-vox@staging` |
-| produção | `latest`  | `X.Y.Z`           | workflow `promote.yml` | `npm i -g cli-vox`         |
+| staging  | `staging` | `X.Y.Z-staging.N` | push na `develop`      | `npm i -g mycli@staging` |
+| produção | `latest`  | `X.Y.Z`           | workflow `promote.yml` | `npm i -g mycli`         |
 
 `N` é o `github.run_number`: único e crescente, sem estado extra no repositório.
 
@@ -41,7 +41,7 @@ Depois de cada release, o primeiro PR na `develop` bumpa para a próxima versão
 
 ### Rollback
 
-`npm dist-tag add cli-vox@<versão-anterior> latest` (workflow **Rollback**) e `npm deprecate` na versão ruim. Nunca `npm unpublish`.
+`npm dist-tag add mycli@<versão-anterior> latest` (workflow **Rollback**) e `npm deprecate` na versão ruim. Nunca `npm unpublish`.
 
 ## Alternativas consideradas
 

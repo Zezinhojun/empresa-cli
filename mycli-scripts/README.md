@@ -1,9 +1,9 @@
-# Scripts da vox
+# Scripts da mycli
 
-Cada pasta aqui dentro vira um **comando da CLI**: `vox <nome>`. Os scripts viajam **dentro do pacote npm**,
+Cada pasta aqui dentro vira um **comando da CLI**: `mycli <nome>`. Os scripts viajam **dentro do pacote npm**,
 então passam por PR, revisão e CI como qualquer outro código (decisão em
 [ADR 0002](../docs/adr/0002-scripts-empacotados.md)). Quem usa **não precisa saber** se o script é `.sh`,
-`.py` ou `.js`: a `vox` descobre como executar.
+`.py` ou `.js`: a `mycli` descobre como executar.
 
 > **Segurança:** scripts são código executado na máquina de todos. Leia o
 > [modelo de ameaças](../docs/security/runner.md) e use o checklist de revisão dele. A revisão de segurança do
@@ -13,7 +13,7 @@ então passam por PR, revisão e CI como qualquer outro código (decisão em
 ## Como criar um script
 
 ```
-vox-scripts/
+mycli-scripts/
   setup-wordpress/          ← nome da pasta = nome do comando
     manifest.json           ← o contrato do script (obrigatório)
     setup.sh                ← arquivo de entrada (pode ter arquivos de apoio ao lado)
@@ -38,7 +38,7 @@ vox-scripts/
 | Campo         | Obrigatório | O que é                                                                                                                                                                                                |
 | ------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `name`        | sim         | Nome do comando: minúsculas e hífens (`setup-wordpress`), até 40 caracteres. **Igual ao da pasta.** Não pode repetir um comando existente.                                                             |
-| `description` | sim         | O que faz, **em linguagem simples** (aparece no menu e em `vox list`). Até 200 caracteres.                                                                                                             |
+| `description` | sim         | O que faz, **em linguagem simples** (aparece no menu e em `mycli list`). Até 200 caracteres.                                                                                                           |
 | `entry`       | sim         | Arquivo a executar, relativo à pasta. `.js`/`.mjs`/`.cjs`, `.sh` ou `.py`. O runtime sai da extensão.                                                                                                  |
 | `risk`        | sim         | `read` (só lê), `write` (altera coisas) ou `destructive` (pode apagar). Veja abaixo.                                                                                                                   |
 | `args`        | não         | Argumentos posicionais (`name`, `description`, `required`). Obrigatórios vêm antes dos opcionais.                                                                                                      |
@@ -63,7 +63,7 @@ CommonJS use a extensão `.cjs`. Scripts `.sh` precisam de fim de linha **LF** (
 isso no checkout; com CRLF o Bash falha no Linux/macOS).
 
 No Windows não há Bash nem Python por padrão. Se faltar, a CLI **não executa** e explica o que instalar
-(`vox doctor` mostra a situação do computador).
+(`mycli doctor` mostra a situação do computador).
 
 ### Risco e confirmação
 
@@ -85,11 +85,11 @@ precisa ter `package.json` ou `composer.json`; `~`, a raiz do disco e pastas do 
 
 - **Argumentos:** exatamente como a pessoa digitou, um por posição (`$1`, `sys.argv[1]`, `process.argv[2]`).
   Nada é reinterpretado por shell: espaços, aspas, `;`, `$(…)` chegam literais.
-- **Diretório atual:** de onde a pessoa chamou a `vox`.
+- **Diretório atual:** de onde a pessoa chamou a `mycli`.
 - **Variáveis de ambiente:** só o essencial (`PATH`, `HOME`, `TEMP`, idioma…). Tokens e chaves do ambiente
-  **não** são repassados. Além disso: `VOX_JSON`, `VOX_NO_INPUT`, `VOX_YES` (`1`/`0`), `VOX_SCRIPT_DIR`
-  (pasta do script, para achar arquivos de apoio) e `VOX_VERSION`.
-- **Entrada (stdin):** só há se houver um terminal interativo. Com `VOX_NO_INPUT=1`, **nunca peça nada**:
+  **não** são repassados. Além disso: `MYCLI_JSON`, `MYCLI_NO_INPUT`, `MYCLI_YES` (`1`/`0`), `MYCLI_SCRIPT_DIR`
+  (pasta do script, para achar arquivos de apoio) e `MYCLI_VERSION`.
+- **Entrada (stdin):** só há se houver um terminal interativo. Com `MYCLI_NO_INPUT=1`, **nunca peça nada**:
   falhe com uma mensagem clara.
 - **Saída:** escreva o resultado em `stdout` e avisos em `stderr`. Saia com `0` em sucesso; qualquer outro
   código vira o erro `SCRIPT_FAILED` (com o código real em `error.details.exitCode`).
@@ -101,16 +101,16 @@ precisa ter `package.json` ou `composer.json`; `~`, a raiz do disco e pastas do 
   e **nada executa**. Por isso: não crie arquivos dentro da pasta do script em tempo de execução (use um
   diretório temporário) e **não use links simbólicos**.
 - **Auditoria:** toda tentativa de executar (inclusive as negadas e as bloqueadas) é gravada em
-  `~/.vox/audit.log`: quem, quando, qual script, argumentos (com segredos mascarados), risco, resultado.
+  `~/.mycli/audit.log`: quem, quando, qual script, argumentos (com segredos mascarados), risco, resultado.
   A saída do script **não** é gravada. **Não passe segredos por argumento**; use variável de ambiente ou arquivo.
 
 ## Testando
 
 ```bash
-npm run build                 # valida os manifestos e gera vox-scripts/index.json
-vox list --json               # o script aparece no catálogo (kind: "script")
-vox <nome> --dry-run          # mostra o que seria executado, sem executar
-vox <nome> <args> --json      # executa e devolve stdout/stderr no JSON
+npm run build                 # valida os manifestos e gera mycli-scripts/index.json
+mycli list --json               # o script aparece no catálogo (kind: "script")
+mycli <nome> --dry-run          # mostra o que seria executado, sem executar
+mycli <nome> <args> --json      # executa e devolve stdout/stderr no JSON
 ```
 
 O build **falha** se algum manifesto for inválido, se o nome repetir outro comando ou se o arquivo de entrada

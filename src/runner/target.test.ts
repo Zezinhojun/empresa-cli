@@ -5,7 +5,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 
 import { resolveTarget } from './target.js';
 
-const root = mkdtempSync(path.join(tmpdir(), 'vox-target-'));
+const root = mkdtempSync(path.join(tmpdir(), 'mycli-target-'));
 afterAll(() => rmSync(root, { force: true, recursive: true }));
 
 const project = (name: string) => {

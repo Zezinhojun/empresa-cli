@@ -38,10 +38,10 @@ describe('buildScriptEnv', () => {
     expect(buildScriptEnv({ Path: 'C:\\x' }, {})).toEqual({ Path: 'C:\\x' });
   });
 
-  it('as variáveis VOX_* do runner são acrescentadas e vencem as herdadas', () => {
-    expect(buildScriptEnv({ HOME: '/h' }, { VOX_JSON: '1' })).toEqual({
+  it('as variáveis MYCLI_* do runner são acrescentadas e vencem as herdadas', () => {
+    expect(buildScriptEnv({ HOME: '/h' }, { MYCLI_JSON: '1' })).toEqual({
       HOME: '/h',
-      VOX_JSON: '1',
+      MYCLI_JSON: '1',
     });
     expect(buildScriptEnv({ HOME: '/h' }, { HOME: '/outro' })).toEqual({ HOME: '/outro' });
   });

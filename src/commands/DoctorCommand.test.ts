@@ -104,7 +104,7 @@ describe('DoctorCommand', () => {
           label: 'Node.js',
           ok: true,
           runtime: 'node',
-          usedFor: 'a própria vox',
+          usedFor: 'a própria mycli',
           version: 'v22.1.0',
         },
         {

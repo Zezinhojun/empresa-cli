@@ -16,7 +16,7 @@ import {
 
 let root: string;
 
-/** Cria vox-scripts/<name>/ com manifesto e arquivos. */
+/** Cria mycli-scripts/<name>/ com manifesto e arquivos. */
 const script = (
   name: string,
   manifest: Record<string, unknown> | string,
@@ -50,7 +50,7 @@ const problemsOf = (reserved: string[] = []): string[] => {
 };
 
 beforeEach(() => {
-  root = path.join(mkdtempSync(path.join(tmpdir(), 'vox-index-')), 'vox-scripts');
+  root = path.join(mkdtempSync(path.join(tmpdir(), 'mycli-index-')), 'mycli-scripts');
   mkdirSync(root, { recursive: true });
 });
 afterEach(() => rmSync(path.dirname(root), { force: true, recursive: true }));
@@ -110,13 +110,15 @@ describe('buildIndex', () => {
     it('sem manifest.json', () => {
       mkdirSync(path.join(root, 'sem-manifesto'));
 
-      expect(problemsOf()).toEqual(['vox-scripts/sem-manifesto: falta o manifest.json']);
+      expect(problemsOf()).toEqual(['mycli-scripts/sem-manifesto: falta o manifest.json']);
     });
 
     it('JSON quebrado', () => {
       script('quebrado', '{ nao é json');
 
-      expect(problemsOf()[0]).toContain('vox-scripts/quebrado: manifest.json não é um JSON válido');
+      expect(problemsOf()[0]).toContain(
+        'mycli-scripts/quebrado: manifest.json não é um JSON válido',
+      );
     });
 
     it('manifesto inválido: cada problema aparece prefixado pela pasta', () => {
@@ -124,9 +126,9 @@ describe('buildIndex', () => {
 
       const problems = problemsOf();
 
-      expect(problems.some((p) => p.startsWith('vox-scripts/ruim: ') && p.includes('"riks"'))).toBe(
-        true,
-      );
+      expect(
+        problems.some((p) => p.startsWith('mycli-scripts/ruim: ') && p.includes('"riks"')),
+      ).toBe(true);
       expect(problems.some((p) => p.includes('"description"'))).toBe(true);
       expect(problems.some((p) => p.includes('"risk"'))).toBe(true);
     });
@@ -135,7 +137,7 @@ describe('buildIndex', () => {
       script('pasta-errada', ok('outro-nome'));
 
       expect(problemsOf()).toEqual([
-        'vox-scripts/pasta-errada: a pasta deve se chamar "outro-nome" (igual ao "name")',
+        'mycli-scripts/pasta-errada: a pasta deve se chamar "outro-nome" (igual ao "name")',
       ]);
     });
 
@@ -143,7 +145,7 @@ describe('buildIndex', () => {
       script('list', ok('list'));
 
       expect(problemsOf(['list', 'menu'])).toEqual([
-        'vox-scripts/list: o nome "list" já é usado por outro comando',
+        'mycli-scripts/list: o nome "list" já é usado por outro comando',
       ]);
     });
 
@@ -151,7 +153,7 @@ describe('buildIndex', () => {
       script('sem-entrada', ok('sem-entrada', { entry: 'nao-existe.js' }));
 
       expect(problemsOf()).toEqual([
-        'vox-scripts/sem-entrada: o arquivo de entrada "nao-existe.js" não existe',
+        'mycli-scripts/sem-entrada: o arquivo de entrada "nao-existe.js" não existe',
       ]);
     });
 
@@ -227,7 +229,7 @@ describe('buildIndex: scripts .sh com fim de linha CRLF', () => {
     });
 
     expect(problemsOf()).toEqual([
-      expect.stringContaining('vox-scripts/com-crlf: "run.sh" usa fim de linha CRLF'),
+      expect.stringContaining('mycli-scripts/com-crlf: "run.sh" usa fim de linha CRLF'),
     ]);
   });
 
@@ -321,7 +323,7 @@ describe('hashDirectory / verifyDirectory', () => {
 });
 
 describe('findScriptsRoot', () => {
-  it('acha vox-scripts/ (com índice) subindo a partir do arquivo que está rodando', () => {
+  it('acha mycli-scripts/ (com índice) subindo a partir do arquivo que está rodando', () => {
     writeFileSync(path.join(root, INDEX_FILE), JSON.stringify({ schemaVersion: 1, scripts: [] }));
     const deep = path.join(path.dirname(root), 'dist');
     mkdirSync(deep);

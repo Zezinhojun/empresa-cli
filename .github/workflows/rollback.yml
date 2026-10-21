@@ -2,7 +2,7 @@ name: Rollback latest
 
 # Manual. Aponta `latest` de volta para uma versão estável anterior.
 # Não despublica nada (npm unpublish é proibido); deprecie a versão ruim com:
-#   npm deprecate cli-vox@<versão> "motivo"
+#   npm deprecate mycli@<versão> "motivo"
 
 on:
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
       - name: dist-tag latest
         run: |
           case "$VERSION" in *-*) echo "::error::use uma versão estável (X.Y.Z)"; exit 1 ;; esac
-          npm dist-tag add "cli-vox@$VERSION" latest
-          npm dist-tag ls cli-vox
+          npm dist-tag add "mycli@$VERSION" latest
+          npm dist-tag ls mycli
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -50,7 +50,7 @@ const run = (entry: string, args: string[]) =>
 
 beforeAll(() => {
   // Pasta com espaço e acento, como o perfil de muita gente no Windows.
-  dir = path.join(mkdtempSync(path.join(tmpdir(), 'vox-inj-')), 'Pasta com espaço é acento');
+  dir = path.join(mkdtempSync(path.join(tmpdir(), 'mycli-inj-')), 'Pasta com espaço é acento');
   mkdirSync(dir);
   marker = path.join(dir, 'HACKEADO');
 });

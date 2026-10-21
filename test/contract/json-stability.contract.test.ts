@@ -15,7 +15,7 @@ const EXIT_CODES = new Set([0, 1, 2, 3, 4, 130]);
 
 let home: string;
 
-function vox(args: string[]) {
+function mycli(args: string[]) {
   const env: Record<string, string | undefined> = { ...process.env, HOME: home, USERPROFILE: home };
   for (const key of ['CI', 'NO_COLOR', 'FORCE_COLOR']) delete env[key];
   const r = spawnSync(process.execPath, [DIST, ...args], {
@@ -28,13 +28,13 @@ function vox(args: string[]) {
 }
 
 beforeAll(() => {
-  home = mkdtempSync(join(tmpdir(), 'vox-stability-'));
+  home = mkdtempSync(join(tmpdir(), 'mycli-stability-'));
 });
 afterAll(() => rmSync(home, { force: true, recursive: true }));
 
 describe('catálogo --json: formato estável', () => {
   it('cada comando nativo mantém nome, risco, tipo e argumentos', () => {
-    const r = vox(['list', '--json']);
+    const r = mycli(['list', '--json']);
     const { data, ok, schemaVersion } = JSON.parse(r.stdout) as {
       data: {
         commands: {
@@ -57,7 +57,7 @@ describe('catálogo --json: formato estável', () => {
       status: 0,
     });
     expect(data.version).toMatch(/^\d+\.\d+\.\d+/);
-    // Só os nativos: scripts de vox-scripts/ entram e saem sem quebrar este teste.
+    // Só os nativos: scripts de mycli-scripts/ entram e saem sem quebrar este teste.
     const builtins = data.commands
       .filter((c) => c.kind === 'builtin')
       .map((c) => ({
@@ -75,7 +75,7 @@ describe('catálogo --json: formato estável', () => {
       {
         args: [{ name: 'subpasta', required: false }],
         interactive: false,
-        name: 'list-vox',
+        name: 'list-files',
         requires: [],
         risk: 'read',
       },
@@ -87,7 +87,7 @@ describe('catálogo --json: formato estável', () => {
   });
 
   it('toda entrada do catálogo tem exatamente os campos do contrato', () => {
-    const { data } = JSON.parse(vox(['list', '--json']).stdout) as {
+    const { data } = JSON.parse(mycli(['list', '--json']).stdout) as {
       data: { commands: Record<string, unknown>[] };
     };
 
@@ -104,7 +104,7 @@ describe('catálogo --json: formato estável', () => {
 
 describe('fuzz leve do parser de flags', () => {
   const TOKENS = [
-    'list-vox',
+    'list-files',
     'list',
     'doctor',
     'agent-guide',
@@ -161,7 +161,7 @@ describe('fuzz leve do parser de flags', () => {
   it.each(cases.map((args) => [JSON.stringify(args), args] as const))(
     'com --json, %s: exit da tabela e UMA linha de JSON válido',
     (_nome, args) => {
-      const r = vox(['--json', ...args]);
+      const r = mycli(['--json', ...args]);
 
       expect(EXIT_CODES.has(r.status ?? -1), `exit ${r.status} fora da tabela`).toBe(true);
       expect(r.stderr, 'stderr deve ficar vazio no modo --json').toBe('');

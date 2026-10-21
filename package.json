@@ -1,27 +1,27 @@
 {
-  "name": "cli-vox",
+  "name": "mycli",
   "version": "1.0.0",
-  "description": "CLI interna para automação de tarefas da empresa",
-  "author": "José Antônio jose.antonio@voxtecnologia.com",
+  "description": "CLI para automatizar tarefas com scripts seus",
+  "author": "Seu Nome <voce@exemplo.com>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Zezinhojun/empresa-cli.git"
+    "url": "git+https://github.com/OWNER/REPO.git"
   },
   "bugs": {
-    "url": "https://github.com/Zezinhojun/empresa-cli/issues"
+    "url": "https://github.com/OWNER/REPO/issues"
   },
-  "homepage": "https://github.com/Zezinhojun/empresa-cli#readme",
+  "homepage": "https://github.com/OWNER/REPO#readme",
   "keywords": [
     "cli",
-    "vox",
+    "mycli",
     "automation",
     "devops"
   ],
   "files": [
     "dist",
-    "vox-scripts",
-    "!vox-scripts/README.md"
+    "mycli-scripts",
+    "!mycli-scripts/README.md"
   ],
   "publishConfig": {
     "access": "public",
@@ -29,7 +29,7 @@
   },
   "type": "module",
   "bin": {
-    "vox": "./dist/index.js"
+    "mycli": "./dist/index.js"
   },
   "engines": {
     "node": ">=20 <25"
@@ -41,6 +41,7 @@
     "contract": "npm run build && vitest run --config vitest.contract.config.ts",
     "scripts:index": "tsx scripts/build-scripts-index.ts",
     "backlog": "tsx scripts/backlog.ts",
+    "init": "node scripts/init.mjs",
     "smoke": "node scripts/smoke.mjs",
     "typecheck": "tsc --noEmit",
     "prepack": "npm run build",

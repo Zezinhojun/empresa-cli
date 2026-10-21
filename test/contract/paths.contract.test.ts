@@ -21,7 +21,7 @@ const minimalEnv = (extra: Record<string, string> = {}) => {
   return env;
 };
 
-const vox = (args: string[], env: Record<string, string>) =>
+const mycli = (args: string[], env: Record<string, string>) =>
   spawnSync(process.execPath, [DIST, ...args], {
     encoding: 'utf8',
     env,
@@ -30,10 +30,10 @@ const vox = (args: string[], env: Record<string, string>) =>
   });
 
 beforeAll(() => {
-  root = mkdtempSync(join(tmpdir(), 'vox-paths-'));
+  root = mkdtempSync(join(tmpdir(), 'mycli-paths-'));
   home = join(root, 'João da Silva é Ünï');
-  mkdirSync(join(home, 'vox', 'arquitetura', 'serviços'), { recursive: true });
-  writeFileSync(join(home, 'vox', 'arquitetura', 'léia-me.txt'), 'oi');
+  mkdirSync(join(home, 'mycli', 'files', 'serviços'), { recursive: true });
+  writeFileSync(join(home, 'mycli', 'files', 'léia-me.txt'), 'oi');
 });
 afterAll(() => rmSync(root, { force: true, recursive: true }));
 
@@ -41,7 +41,7 @@ describe('perfil com espaço e acento', () => {
   const env = () => minimalEnv({ HOME: home, USERPROFILE: home });
 
   it('--json devolve os nomes com acento intactos', () => {
-    const r = vox(['list-vox', '--json'], env());
+    const r = mycli(['list-files', '--json'], env());
 
     expect(r.status).toBe(0);
     expect(r.stderr).toBe('');
@@ -53,7 +53,7 @@ describe('perfil com espaço e acento', () => {
   });
 
   it('texto simples também preserva os nomes (sem ? nem mojibake)', () => {
-    const r = vox(['list-vox', '--plain'], env());
+    const r = mycli(['list-files', '--plain'], env());
 
     expect(r.status).toBe(0);
     expect(r.stdout).toContain('léia-me.txt');
@@ -61,7 +61,7 @@ describe('perfil com espaço e acento', () => {
   });
 
   it('subpasta com acento', () => {
-    const r = vox(['list-vox', 'serviços', '--json'], env());
+    const r = mycli(['list-files', 'serviços', '--json'], env());
 
     expect(r.status).toBe(0);
   });
@@ -69,16 +69,16 @@ describe('perfil com espaço e acento', () => {
 
 describe('HOME ausente', () => {
   it('não quebra: devolve JSON válido (sucesso ou erro claro), nunca stack trace', () => {
-    const r = vox(['list-vox', '--json'], minimalEnv());
+    const r = mycli(['list-files', '--json'], minimalEnv());
 
     expect([0, 1, 2]).toContain(r.status);
     expect(r.stderr).toBe('');
     expect(JSON.parse(r.stdout)).toMatchObject({ schemaVersion: 1 });
   });
 
-  it('`vox doctor` e `vox --version` funcionam sem HOME', () => {
-    expect(vox(['--version'], minimalEnv()).status).toBe(0);
-    expect(vox(['doctor', '--json'], minimalEnv()).status).toBe(0);
+  it('`mycli doctor` e `mycli --version` funcionam sem HOME', () => {
+    expect(mycli(['--version'], minimalEnv()).status).toBe(0);
+    expect(mycli(['doctor', '--json'], minimalEnv()).status).toBe(0);
   });
 });
 
@@ -92,7 +92,7 @@ describe.skipIf(!isWindows)('Windows: shells diferentes', () => {
         '-NoProfile',
         '-NonInteractive',
         '-Command',
-        `& '${process.execPath}' '${DIST}' list-vox --json`,
+        `& '${process.execPath}' '${DIST}' list-files --json`,
       ],
       { encoding: 'utf8', env: env(), timeout: 30_000 },
     );
@@ -104,7 +104,7 @@ describe.skipIf(!isWindows)('Windows: shells diferentes', () => {
   it('cmd.exe: caminho do binário e do perfil com espaço', () => {
     const r = spawnSync(
       'cmd.exe',
-      ['/d', '/s', '/c', `""${process.execPath}" "${DIST}" list-vox --json"`],
+      ['/d', '/s', '/c', `""${process.execPath}" "${DIST}" list-files --json"`],
       {
         encoding: 'utf8',
         env: env(),

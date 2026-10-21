@@ -12,15 +12,20 @@ Nenhum workflow publica sem a variável `NPM_PUBLISH_ENABLED=true` e credenciais
 
 ## 1. Configuração única (só o dono do repositório / npm)
 
-1. Defina o dono do pacote no npm (conta ou organização) e confirme o nome `cli-vox`
-   (issue #6; padrão adotado: público, `access: public`).
+1. **Nome e dono do pacote.** Escolha um nome **livre** no npm (`npm view <nome>` deve dar 404) ou use um escopo da
+   sua conta/organização (`@sua-org/<nome>`, edite o `name` do `package.json` à mão: o `init` não aceita `@`).
+   O comando que as pessoas digitam é o `bin`, que não muda. Padrão adotado: público, `access: public`.
 2. Gere um **automation token** no npm (nunca cole em chat, issue ou commit) e salve como secret
    **`NPM_TOKEN`** nos environments `staging` **e** `production`
    (GitHub → Settings → Environments). Alternativa: _trusted publishing_ do npm.
 3. Habilite a publicação: Settings → Secrets and variables → Actions → **Variables** →
    `NPM_PUBLISH_ENABLED` = `true`.
-
-O environment `production` exige aprovação de revisor e só aceita deploy a partir da `master`.
+4. **Branch protection** em `develop` e `master`: PR obrigatório e os checks do CI como obrigatórios (lint, testes nos 3
+   sistemas, build + smoke). O scaffold **não** traz isso configurado.
+5. **Provenance.** Os workflows publicam com `--provenance`, que exige o GitHub Actions e repositório público. Se o seu
+   for privado, remova `--provenance` de `publish.yml` e `promote.yml`.
+6. **Privacidade.** O padrão é pacote público, e os scripts de `<nome>-scripts/` vão dentro dele. Para uso só interno,
+   use escopo com `access: restricted` (em `publishConfig` e nos dois workflows) ou um registro privado.
 
 ## 2. Lançar uma versão
 
@@ -39,15 +44,15 @@ O environment `production` exige aprovação de revisor e só aceita deploy a pa
 
 ## 3. Checklist de validação em staging
 
-Rodar com `npm install -g cli-vox@staging`:
+Rodar com `npm install -g mycli@staging`:
 
 - [ ] Instala limpo em **Windows, Linux e macOS** (Node 20 e 24)
-- [ ] `vox --version` = versão publicada; `vox --help` lista `menu`, `list-vox`, `top-memory`
-- [ ] `vox` abre o menu; "Sair" encerra com código 0
-- [ ] `vox list-vox` com e sem a pasta `~/vox/arquitetura`; com subpasta (`vox list-vox <sub>`)
-- [ ] `vox top-memory` lista 10 processos
-- [ ] `vox comando-inexistente` sai com código ≠ 0
-- [ ] Atualizar sobre uma versão anterior funciona (`npm i -g cli-vox@staging`)
+- [ ] `mycli --version` = versão publicada; `mycli --help` lista `menu`, `list-files`, `top-memory`
+- [ ] `mycli` abre o menu; "Sair" encerra com código 0
+- [ ] `mycli list-files` com e sem a pasta `~/mycli/files`; com subpasta (`mycli list-files <sub>`)
+- [ ] `mycli top-memory` lista 10 processos
+- [ ] `mycli comando-inexistente` sai com código ≠ 0
+- [ ] Atualizar sobre uma versão anterior funciona (`npm i -g mycli@staging`)
 - [ ] A página do pacote no npm mostra o selo de **provenance**
 - [ ] Nenhuma issue aberta com label `blocker`
 
@@ -57,7 +62,7 @@ Anexe o resultado ao PR `develop → master`.
 
 Siga a seção 2 com `package.json` em `1.0.0`. Ao final:
 
-- [ ] `npm install -g cli-vox` (latest) instala `1.0.0`; `cli-vox@staging` segue para a próxima pré-release
+- [ ] `npm install -g mycli` (latest) instala `1.0.0`; `mycli@staging` segue para a próxima pré-release
 - [ ] Tag `v1.0.0` e GitHub Release criados
 - [ ] CHANGELOG: mover `[Unreleased]` para `[1.0.0]` com a data
 
@@ -66,12 +71,12 @@ Siga a seção 2 com `package.json` em `1.0.0`. Ao final:
 Nunca use `npm unpublish`. Aponte `latest` de volta para a versão estável anterior:
 
 - Actions → _Rollback latest_ → informe a versão estável (ex.: `1.0.0`), com aprovação; ou
-- `npm dist-tag add cli-vox@<versão-anterior> latest`
+- `npm dist-tag add mycli@<versão-anterior> latest`
 
 E deprecie a versão ruim para avisar quem instalar:
 
 ```bash
-npm deprecate cli-vox@<versão-ruim> "motivo — use <versão-boa>"
+npm deprecate mycli@<versão-ruim> "motivo — use <versão-boa>"
 ```
 
 ## 6. Problemas comuns

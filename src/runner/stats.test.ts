@@ -23,7 +23,7 @@ const entry = (extra: Partial<AuditEntry> = {}): AuditEntry => ({
   ...extra,
 });
 
-const dir = mkdtempSync(path.join(tmpdir(), 'vox-stats-'));
+const dir = mkdtempSync(path.join(tmpdir(), 'mycli-stats-'));
 afterAll(() => rmSync(dir, { force: true, recursive: true }));
 
 describe('summarize', () => {

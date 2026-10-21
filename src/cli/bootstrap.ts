@@ -10,7 +10,7 @@ import { emitData } from './output.js';
 import { parseArgv } from './parseArgv.js';
 import { resolveRuntime, setRuntime } from './runtime.js';
 
-const HELP_HINT = "Use 'vox --help' para ver os comandos disponíveis.";
+const HELP_HINT = "Use 'mycli --help' para ver os comandos disponíveis.";
 
 function checkArgs(command: Command, args: string[]) {
   if (!command.args) return;
@@ -20,7 +20,7 @@ function checkArgs(command: Command, args: string[]) {
       `Argumentos inválidos para '${command.name}'. Uso: ${usage(command)}`,
       ExitCode.usage,
       'INVALID_ARGUMENTS',
-      `Veja 'vox ${command.name} --help'.`,
+      `Veja 'mycli ${command.name} --help'.`,
     );
   }
 }
@@ -76,7 +76,7 @@ export async function bootstrap(argv: string[] = process.argv.slice(2)) {
       showHelp();
       return;
     }
-    console.log(chalk.bold('VOX CLI inicializada'));
+    console.log(chalk.bold('MYCLI CLI inicializada'));
     await executor.execute('menu');
     return;
   }

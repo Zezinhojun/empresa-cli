@@ -1,0 +1,8 @@
+{
+  "name": "ola",
+  "description": "Exemplo: diz olá (copie esta pasta para criar o seu script)",
+  "entry": "ola.js",
+  "args": [{ "name": "nome", "description": "Quem cumprimentar", "required": false }],
+  "risk": "read",
+  "category": "exemplo"
+}

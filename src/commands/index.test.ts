@@ -5,7 +5,7 @@ import './index.js';
 
 describe('commands/index', () => {
   it('registra todos os comandos da CLI', () => {
-    // Os scripts de vox-scripts/ também viram comandos; aqui só interessam os nativos.
+    // Os scripts de mycli-scripts/ também viram comandos; aqui só interessam os nativos.
     const names = CommandRegistry.getInstance()
       .list()
       .filter((command) => command.kind !== 'script')
@@ -16,7 +16,7 @@ describe('commands/index', () => {
       'agent-guide',
       'doctor',
       'list',
-      'list-vox',
+      'list-files',
       'menu',
       'report',
       'stats',

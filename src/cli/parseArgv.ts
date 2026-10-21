@@ -36,7 +36,7 @@ const FLAG_NAMES: Record<string, Exclude<keyof GlobalFlags, 'confirm'>> = {
 
 /**
  * Separa flags globais (em qualquer posição) do comando e dos seus argumentos.
- * Tudo depois de `--` é entregue literal ao comando. `vox help [cmd]` equivale a `[cmd] --help`.
+ * Tudo depois de `--` é entregue literal ao comando. `mycli help [cmd]` equivale a `[cmd] --help`.
  */
 export function parseArgv(argv: string[]): ParsedArgv {
   const flags: GlobalFlags = {

@@ -34,7 +34,7 @@ describe('runScript: dependência ausente', () => {
         code: 'MISSING_RUNTIME',
         details: { install: installHelp(runtime), runtime },
         exitCode: 3,
-        hint: expect.stringContaining('vox doctor'),
+        hint: expect.stringContaining('mycli doctor'),
         message: expect.stringContaining(`precisa do ${label}`),
       });
     },

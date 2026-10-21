@@ -7,10 +7,10 @@ import type { Runtime } from '../cli/runtime.js';
 
 import { CommandRegistry } from '../core/command/CommandRegistry.js';
 import { readDirectory } from '../core/utils/ListDirectory.js';
-import { getVoxArquiteturaPath } from '../vox/directories/VoxArquitetura.js';
-import { ListVoxCommand } from './ListVoxCommand.js';
+import { getFilesPath } from '../workspace/files.js';
+import { ListFilesCommand } from './ListFilesCommand.js';
 
-vi.mock('../vox/directories/VoxArquitetura.js', () => ({ getVoxArquiteturaPath: vi.fn() }));
+vi.mock('../workspace/files.js', () => ({ getFilesPath: vi.fn() }));
 vi.mock('../core/utils/ListDirectory.js', () => ({ readDirectory: vi.fn() }));
 
 const BASE = path.join('/mock', 'arquitetura');
@@ -25,20 +25,20 @@ const rt = (plain: boolean): Runtime => ({
   yes: false,
 });
 
-describe('ListVoxCommand', () => {
-  let cmd: ListVoxCommand;
+describe('ListFilesCommand', () => {
+  let cmd: ListFilesCommand;
 
   beforeEach(() => {
     (CommandRegistry as unknown as { instance?: CommandRegistry | undefined }).instance = undefined;
     CommandRegistry.getInstance();
-    cmd = new ListVoxCommand();
-    vi.mocked(getVoxArquiteturaPath).mockImplementation((sub = '') => path.join(BASE, sub));
+    cmd = new ListFilesCommand();
+    vi.mocked(getFilesPath).mockImplementation((sub = '') => path.join(BASE, sub));
   });
 
   afterEach(() => vi.clearAllMocks());
 
   it('tem nome, descrição e a subpasta como argumento opcional', () => {
-    expect(cmd.name).toBe('list-vox');
+    expect(cmd.name).toBe('list-files');
     expect(cmd.description).toContain('Lista o conteúdo');
     expect(cmd.args).toEqual([{ description: expect.any(String), name: 'subpasta' }]);
   });

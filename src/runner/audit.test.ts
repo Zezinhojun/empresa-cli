@@ -115,13 +115,13 @@ describe('maskArgs: esconde segredos óbvios', () => {
 });
 
 describe('auditLogPath', () => {
-  it('padrão: ~/.vox/audit.log', () => {
-    expect(auditLogPath({})).toMatch(/\.vox[\\/]audit\.log$/);
+  it('padrão: ~/.mycli/audit.log', () => {
+    expect(auditLogPath({})).toMatch(/\.mycli[\\/]audit\.log$/);
   });
 
-  it('VOX_AUDIT_LOG troca o local; "off" desliga', () => {
-    expect(auditLogPath({ VOX_AUDIT_LOG: '/tmp/meu.log' })).toBe('/tmp/meu.log');
-    expect(auditLogPath({ VOX_AUDIT_LOG: 'off' })).toBeUndefined();
+  it('MYCLI_AUDIT_LOG troca o local; "off" desliga', () => {
+    expect(auditLogPath({ MYCLI_AUDIT_LOG: '/tmp/meu.log' })).toBe('/tmp/meu.log');
+    expect(auditLogPath({ MYCLI_AUDIT_LOG: 'off' })).toBeUndefined();
   });
 });
 
@@ -141,7 +141,7 @@ describe('writeAudit', () => {
     });
 
   beforeEach(() => {
-    dir = mkdtempSync(path.join(tmpdir(), 'vox-audit-'));
+    dir = mkdtempSync(path.join(tmpdir(), 'mycli-audit-'));
   });
   afterEach(() => rmSync(dir, { force: true, recursive: true }));
 

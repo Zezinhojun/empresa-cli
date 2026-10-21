@@ -35,19 +35,19 @@ let file: string;
 let previous: string | undefined;
 
 beforeAll(() => {
-  dir = mkdtempSync(path.join(tmpdir(), 'vox-report-'));
+  dir = mkdtempSync(path.join(tmpdir(), 'mycli-report-'));
   file = path.join(dir, 'audit.log');
   writeFileSync(file, `${line({ errorCode: 'SCRIPT_FAILED' })}\n${line({ outcome: 'ok' })}\n`);
-  previous = process.env.VOX_AUDIT_LOG;
-  process.env.VOX_AUDIT_LOG = file;
+  previous = process.env.MYCLI_AUDIT_LOG;
+  process.env.MYCLI_AUDIT_LOG = file;
 });
 afterEach(() => {
   resetRuntime();
   vi.mocked(execa).mockClear();
 });
 afterAll(() => {
-  if (previous === undefined) delete process.env.VOX_AUDIT_LOG;
-  else process.env.VOX_AUDIT_LOG = previous;
+  if (previous === undefined) delete process.env.MYCLI_AUDIT_LOG;
+  else process.env.MYCLI_AUDIT_LOG = previous;
   rmSync(dir, { force: true, recursive: true });
 });
 

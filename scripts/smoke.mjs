@@ -20,7 +20,7 @@ import { join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const pkg = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8'));
-const ALLOWED = /^(dist\/.+|package\.json|README\.md|LICENSE|vox-scripts\/.+)$/;
+const ALLOWED = /^(dist\/.+|package\.json|README\.md|LICENSE|mycli-scripts\/.+)$/;
 /** Tamanho máximo do tarball (comprimido): um salto grande aqui geralmente é arquivo que não devia entrar. */
 const MAX_TARBALL_BYTES = 300_000;
 
@@ -31,7 +31,7 @@ const assert = (ok, msg) => {
   console.log(`✔ ${msg}`);
 };
 
-const work = mkdtempSync(join(tmpdir(), 'vox-smoke-'));
+const work = mkdtempSync(join(tmpdir(), 'mycli-smoke-'));
 try {
   run('npm run build');
   const [{ files, filename, size }] = JSON.parse(
@@ -46,86 +46,93 @@ try {
     `tarball só contém arquivos de runtime (extras: ${extras.join(', ') || 'nenhum'})`,
   );
   assert(
-    paths.includes('vox-scripts/index.json') && !paths.includes('vox-scripts/README.md'),
-    'tarball leva o índice de scripts (vox-scripts/index.json) e não leva o README de desenvolvimento',
+    paths.includes('mycli-scripts/index.json') && !paths.includes('mycli-scripts/README.md'),
+    'tarball leva o índice de scripts (mycli-scripts/index.json) e não leva o README de desenvolvimento',
   );
   assert(size < MAX_TARBALL_BYTES, `tarball pequeno: ${size} bytes (< ${MAX_TARBALL_BYTES})`);
 
   run('npm init -y', work);
   run(`npm install --no-audit --no-fund "${join(work, filename)}"`, work);
 
-  const entry = join(work, 'node_modules', pkg.name, pkg.bin.vox);
+  const entry = join(work, 'node_modules', pkg.name, pkg.bin.mycli);
   assert(readFileSync(entry, 'utf8').startsWith('#!/usr/bin/env node'), 'bin tem shebang');
 
-  // HOME isolado com uma pasta ~/vox/arquitetura de teste (nas máquinas de CI ela não existe)
+  // HOME isolado com uma pasta ~/mycli/files de teste (nas máquinas de CI ela não existe)
   const home = join(work, 'home');
-  mkdirSync(join(home, 'vox', 'arquitetura', 'servicos'), { recursive: true });
-  writeFileSync(join(home, 'vox', 'arquitetura', 'leia-me.txt'), 'oi');
+  mkdirSync(join(home, 'mycli', 'files', 'servicos'), { recursive: true });
+  writeFileSync(join(home, 'mycli', 'files', 'leia-me.txt'), 'oi');
   const env = { ...process.env, HOME: home, USERPROFILE: home };
   delete env.CI; // o smoke simula uma pessoa/agente; CI=true só desliga prompts
 
   // sem terminal (stdin/stdout em pipe), exatamente como um agente chamaria
   const exec = (...args) =>
     spawnSync(process.execPath, [entry, ...args], { cwd: work, encoding: 'utf8', env });
-  const vox = (...args) => {
+  const mycli = (...args) => {
     const r = exec(...args);
-    if (r.status !== 0) throw new Error(`vox ${args.join(' ')} saiu com ${r.status}: ${r.stderr}`);
+    if (r.status !== 0)
+      throw new Error(`mycli ${args.join(' ')} saiu com ${r.status}: ${r.stderr}`);
     return r.stdout;
   };
-  const json = (...args) => JSON.parse(vox(...args, '--json')); // falha se stdout tiver algo além do JSON
+  const json = (...args) => JSON.parse(mycli(...args, '--json')); // falha se stdout tiver algo além do JSON
 
-  assert(vox('--version').trim() === pkg.version, `vox --version === ${pkg.version}`);
-  const help = vox('--help');
+  assert(mycli('--version').trim() === pkg.version, `mycli --version === ${pkg.version}`);
+  const help = mycli('--help');
   assert(
-    ['menu', 'list-vox', 'top-memory'].every((c) => help.includes(c)),
-    'vox --help lista todos os comandos',
+    ['menu', 'list-files', 'top-memory'].every((c) => help.includes(c)),
+    'mycli --help lista todos os comandos',
   );
   assert(
-    vox('list-vox').includes('servicos/'),
-    'vox list-vox lista a pasta (texto simples fora de TTY)',
+    mycli('list-files').includes('servicos/'),
+    'mycli list-files lista a pasta (texto simples fora de TTY)',
   );
-  assert(/MB|WS/.test(vox('top-memory')), 'vox top-memory lista processos (ps/powershell reais)');
+  assert(
+    /MB|WS/.test(mycli('top-memory')),
+    'mycli top-memory lista processos (ps/powershell reais)',
+  );
 
   const exitCode = (...args) => exec(...args).status;
   assert(exitCode('comando-que-nao-existe') === 2, 'comando inexistente sai com código 2');
-  assert(exitCode('list-vox', '--opcao-inexistente') === 2, 'opção desconhecida sai com código 2');
   assert(
-    vox('list-vox', '--help').includes('vox list-vox [subpasta]'),
-    'vox <cmd> --help mostra o uso',
+    exitCode('list-files', '--opcao-inexistente') === 2,
+    'opção desconhecida sai com código 2',
+  );
+  assert(
+    mycli('list-files', '--help').includes('mycli list-files [subpasta]'),
+    'mycli <cmd> --help mostra o uso',
   );
 
-  const semArgs = vox();
+  const semArgs = mycli();
   assert(
     semArgs.includes('Comandos:') &&
       !semArgs.includes('Selecione um comando') &&
       !semArgs.includes('\u001B['),
-    'vox sem argumentos e sem terminal mostra a ajuda (não abre menu, sem ANSI)',
+    'mycli sem argumentos e sem terminal mostra a ajuda (não abre menu, sem ANSI)',
   );
-  assert(exitCode('menu') === 2, 'vox menu sem terminal recusa com código 2');
+  assert(exitCode('menu') === 2, 'mycli menu sem terminal recusa com código 2');
 
   // --- contrato JSON (docs/cli-contract.md) ---
-  const lv = json('list-vox');
+  const lv = json('list-files');
   assert(
     lv.ok === true &&
       lv.schemaVersion === 1 &&
-      lv.command === 'list-vox' &&
+      lv.command === 'list-files' &&
       JSON.stringify(lv.data.items) ===
         JSON.stringify([
           { name: 'leia-me.txt', type: 'file' },
           { name: 'servicos', type: 'dir' },
         ]),
-    'list-vox --json: stdout só com o envelope JSON e os dados corretos',
+    'list-files --json: stdout só com o envelope JSON e os dados corretos',
   );
   const cat = json('list');
   assert(
-    ['list', 'list-vox', 'menu', 'top-memory'].every((n) =>
+    ['list', 'list-files', 'menu', 'top-memory'].every((n) =>
       cat.data.commands.some((c) => c.name === n),
     ) && cat.data.commands.every((c) => ['read', 'write', 'destructive'].includes(c.risk)),
-    'vox list --json: catálogo com todos os comandos e o risco de cada um',
+    'mycli list --json: catálogo com todos os comandos e o risco de cada um',
   );
   assert(
     json().data.commands.length === cat.data.commands.length,
-    'vox --json sem args devolve o catálogo',
+    'mycli --json sem args devolve o catálogo',
   );
   const mem = json('top-memory').data.processes;
   assert(
@@ -134,8 +141,8 @@ try {
   );
 
   assert(
-    vox('agent-guide').includes('Guia rápido para agentes de IA'),
-    'vox agent-guide imprime o guia embutido no pacote',
+    mycli('agent-guide').includes('Guia rápido para agentes de IA'),
+    'mycli agent-guide imprime o guia embutido no pacote',
   );
   const guia = json('agent-guide').data;
   assert(
@@ -147,35 +154,35 @@ try {
   assert(
     ['node', 'bash', 'python'].every((r) => doctor.checks.some((c) => c.runtime === r)) &&
       doctor.checks.find((c) => c.runtime === 'node').ok,
-    'vox doctor --json: confere Node, Bash e Python (o Node sempre ok)',
+    'mycli doctor --json: confere Node, Bash e Python (o Node sempre ok)',
   );
   assert(
-    vox('doctor').includes('Verificando este computador'),
-    'vox doctor imprime o diagnóstico em texto simples',
+    mycli('doctor').includes('Verificando este computador'),
+    'mycli doctor imprime o diagnóstico em texto simples',
   );
 
-  const ausente = exec('list-vox', 'nao-existe', '--json');
+  const ausente = exec('list-files', 'nao-existe', '--json');
   assert(
     ausente.status === 1 &&
       ausente.stderr === '' &&
       JSON.parse(ausente.stdout).error.code === 'NOT_FOUND',
     'erro com --json: exit 1, JSON de erro em stdout e stderr vazio',
   );
-  const fora = exec('list-vox', '../..', '--json');
+  const fora = exec('list-files', '../..', '--json');
   assert(
     fora.status === 2 && JSON.parse(fora.stdout).error.code === 'PATH_OUTSIDE_BASE',
-    'list-vox não sai de ~/vox/arquitetura (../.. recusado, exit 2)',
+    'list-files não sai de ~/mycli/files (../.. recusado, exit 2)',
   );
   // --- scripts empacotados: um de cada tipo, no pacote INSTALADO ---
   // Os scripts de teste vivem em test/fixtures (nunca empacotados). Aqui eles são copiados para o
   // pacote instalado e indexados, como o build faria, para exercitar descoberta, execução e integridade.
   const pkgDir = join(work, 'node_modules', pkg.name);
-  cpSync(join(ROOT, 'test', 'fixtures', 'scripts'), join(pkgDir, 'vox-scripts'), {
+  cpSync(join(ROOT, 'test', 'fixtures', 'scripts'), join(pkgDir, 'mycli-scripts'), {
     recursive: true,
   });
   execSync('npx tsx scripts/build-scripts-index.ts', {
     cwd: ROOT,
-    env: { ...process.env, VOX_ROOT: pkgDir },
+    env: { ...process.env, MYCLI_ROOT: pkgDir },
     stdio: ['ignore', 'pipe', 'inherit'],
   });
 
@@ -183,7 +190,7 @@ try {
   const scripts = catalog.filter((c) => c.kind === 'script').map((c) => c.name);
   assert(
     ['smoke-js', 'smoke-py', 'smoke-sh'].every((n) => scripts.includes(n)),
-    'vox list --json: os scripts do pacote aparecem como comandos (kind: script)',
+    'mycli list --json: os scripts do pacote aparecem como comandos (kind: script)',
   );
 
   const available = Object.fromEntries(json('doctor').data.checks.map((c) => [c.runtime, c.ok]));
@@ -194,7 +201,7 @@ try {
   ];
   for (const [name, runtime, expected] of cases) {
     if (!available[runtime]) {
-      console.log(`⚠ ${name} ignorado: este computador não tem ${runtime} (vox doctor)`);
+      console.log(`⚠ ${name} ignorado: este computador não tem ${runtime} (mycli doctor)`);
       continue;
     }
     const out = json(name, 'a b', 'c').data;
@@ -204,10 +211,10 @@ try {
     );
   }
 
-  const auditFile = join(home, '.vox', 'audit.log');
+  const auditFile = join(home, '.mycli', 'audit.log');
   assert(
     existsSync(auditFile) && readFileSync(auditFile, 'utf8').includes('"script":"smoke-js"'),
-    'a execução ficou registrada em ~/.vox/audit.log',
+    'a execução ficou registrada em ~/.mycli/audit.log',
   );
 
   // --- máquina SEM Bash nem Python: o caminho "falta o interpretador" ---
@@ -236,7 +243,7 @@ try {
       !checks.python.ok &&
       checks.bash.install &&
       checks.python.install,
-    'sem Bash nem Python: vox doctor diz o que falta e como instalar (o Node sempre está)',
+    'sem Bash nem Python: mycli doctor diz o que falta e como instalar (o Node sempre está)',
   );
   assert(
     JSON.parse(bare('smoke-js', 'a b', 'c', '--json').stdout).data.stdout.trim() ===
@@ -254,7 +261,7 @@ try {
         r.stderr === '' &&
         error.code === 'MISSING_RUNTIME' &&
         error.message.includes(`precisa do ${label}`) &&
-        error.hint.includes('vox doctor') &&
+        error.hint.includes('mycli doctor') &&
         !/ENOENT|spawn/.test(r.stdout),
       `${name} sem ${label}: exit 3, MISSING_RUNTIME e instruções de instalação (nunca "ENOENT")`,
     );
@@ -271,7 +278,7 @@ try {
   // adulteração depois da instalação: o script alterado NÃO executa
   const marker = join(work, 'executou-adulterado.txt');
   appendFileSync(
-    join(pkgDir, 'vox-scripts', 'smoke-js', 'run.js'),
+    join(pkgDir, 'mycli-scripts', 'smoke-js', 'run.js'),
     `\nimport('node:fs').then((fs) => fs.writeFileSync(${JSON.stringify(marker)}, 'x'));\n`,
   );
   const adulterado = exec('smoke-js', 'a b', 'c', '--json');

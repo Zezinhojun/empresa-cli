@@ -14,7 +14,7 @@ describe('describeCommand', () => {
       name: 'x',
       requires: [],
       risk: 'read',
-      usage: 'vox x [a]',
+      usage: 'mycli x [a]',
     });
   });
 

@@ -1,6 +1,6 @@
 # Contrato de uso da CLI
 
-A `vox` é usada por pessoas **e** por agentes de IA (Claude Code, Codex etc.) como subprocesso.
+A `mycli` é usada por pessoas **e** por agentes de IA (Claude Code, Codex etc.) como subprocesso.
 Este documento é o contrato estável: o que a CLI promete em flags, códigos de saída e saída de dados.
 
 ## Flags globais
@@ -9,7 +9,7 @@ Valem para qualquer comando, antes ou depois dele. Tudo depois de `--` é entreg
 
 | Flag              | Efeito                                               |
 | ----------------- | ---------------------------------------------------- |
-| `-h`, `--help`    | Ajuda geral ou do comando (`vox <comando> --help`)   |
+| `-h`, `--help`    | Ajuda geral ou do comando (`mycli <comando> --help`)   |
 | `-v`, `--version` | Versão                                               |
 | `--json`          | Saída JSON (apenas dados em stdout)                  |
 | `--plain`         | Sem cores nem emojis                                 |
@@ -18,7 +18,7 @@ Valem para qualquer comando, antes ou depois dele. Tudo depois de `--` é entreg
 | `-y`, `--yes`     | Confirma automaticamente as perguntas                |
 | `--verbose`       | Detalhes técnicos (stack) nos erros                  |
 
-`vox help <comando>` equivale a `vox <comando> --help`. Opção desconhecida é erro de uso (código 2).
+`mycli help <comando>` equivale a `mycli <comando> --help`. Opção desconhecida é erro de uso (código 2).
 
 ## Códigos de saída
 
@@ -38,8 +38,8 @@ Erros vão para **stderr**, em uma ou duas linhas (mensagem + dica). O stack só
 A CLI **nunca** abre prompt nem executa comando por conta própria sem um terminal de verdade.
 Ela é "interativa" somente se stdin **e** stdout forem TTY e não houver `--no-input`, `--json` nem `CI=true`.
 
-- `vox` sem argumentos: interativa → abre o menu; **não interativa → imprime a ajuda** (código 0).
-- `vox menu` sem terminal: recusa com código `2` (`INTERACTIVE_REQUIRED`).
+- `mycli` sem argumentos: interativa → abre o menu; **não interativa → imprime a ajuda** (código 0).
+- `mycli menu` sem terminal: recusa com código `2` (`INTERACTIVE_REQUIRED`).
 - Pergunta de confirmação: com `--yes` segue; sem terminal e sem `--yes` falha com código `4`
   (`CONFIRMATION_REQUIRED`) e diz para repetir com `--yes`. Nunca fica esperando resposta.
 - Sem TTY, cores são desligadas automaticamente (também com `NO_COLOR` ou `--plain`).
@@ -57,7 +57,7 @@ Sucesso:
 {
   "schemaVersion": 1,
   "ok": true,
-  "command": "list-vox",
+  "command": "list-files",
   "data": { "path": "...", "items": [{ "name": "api", "type": "dir" }] }
 }
 ```
@@ -82,7 +82,7 @@ Erro (`code` é estável; `hint`, `details` e `stack` são opcionais, o stack s�
 | `UNKNOWN_OPTION`          | 2    | Opção começada por `-` que a CLI não conhece                                                                                     |
 | `INVALID_ARGUMENTS`       | 2    | Faltam ou sobram argumentos                                                                                                      |
 | `INTERACTIVE_REQUIRED`    | 2    | Comando só funciona com terminal (ex.: `menu`)                                                                                   |
-| `PATH_OUTSIDE_BASE`       | 2    | `list-vox` com subpasta fora de `~/vox/arquitetura`                                                                              |
+| `PATH_OUTSIDE_BASE`       | 2    | `list-files` com subpasta fora de `~/mycli/files`                                                                              |
 | `CONFIRMATION_REQUIRED`   | 4    | Ação pede confirmação e não há terminal nem `--yes`                                                                              |
 | `NOT_FOUND`               | 1    | Arquivo ou pasta inexistente (inclui `ENOENT` do sistema)                                                                        |
 | `PERMISSION_DENIED`       | 1    | Sem permissão (inclui `EACCES`/`EPERM` do sistema)                                                                               |
@@ -101,16 +101,16 @@ Erro (`code` é estável; `hint`, `details` e `stack` são opcionais, o stack s�
 
 ## Descobrir comandos
 
-`vox list --json` (ou `vox --json`, ou `vox --help --json`) devolve o catálogo:
+`mycli list --json` (ou `mycli --json`, ou `mycli --help --json`) devolve o catálogo:
 
 ```json
 {
   "version": "1.0.0",
   "commands": [
     {
-      "name": "list-vox",
+      "name": "list-files",
       "description": "...",
-      "usage": "vox list-vox [subpasta]",
+      "usage": "mycli list-files [subpasta]",
       "args": [{ "name": "subpasta", "description": "...", "required": false }],
       "risk": "read",
       "interactive": false,
@@ -121,18 +121,18 @@ Erro (`code` é estável; `hint`, `details` e `stack` são opcionais, o stack s�
 }
 ```
 
-`vox <comando> --help --json` devolve só a entrada daquele comando.
+`mycli <comando> --help --json` devolve só a entrada daquele comando.
 
 - `risk`: `read` (só lê), `write` (altera algo) ou `destructive` (pode apagar/sobrescrever). Agentes devem
   tratar `write` e `destructive` com cuidado e só passar `--yes` quando a ação for realmente pretendida.
 - `interactive: true` significa que o comando exige terminal (ex.: `menu`); agentes devem ignorá-lo.
-- `kind`: `builtin` (comando da própria CLI) ou `script` (veio de `vox-scripts/`; ver
-  [vox-scripts/README.md](../vox-scripts/README.md)). Scripts também trazem `requires` (programas que
+- `kind`: `builtin` (comando da própria CLI) ou `script` (veio de `mycli-scripts/`; ver
+  [mycli-scripts/README.md](../mycli-scripts/README.md)). Scripts também trazem `requires` (programas que
   precisam estar instalados) e, opcionalmente, `category`.
 
 ### Scripts
 
-Um script executa com `vox <nome> [args] --json`: `data` traz `script`, `runtime` (`node`/`bash`/`python`),
+Um script executa com `mycli <nome> [args] --json`: `data` traz `script`, `runtime` (`node`/`bash`/`python`),
 `exitCode`, `durationMs`, `stdout` e `stderr`. Com `--dry-run`, traz o `command` que seria executado e **nada
 roda**. Antes de executar, a CLI confere o sistema (`UNSUPPORTED_OS`), os programas exigidos
 (`MISSING_REQUIREMENT`) e o interpretador (`MISSING_RUNTIME`), todos com código de saída `3`, e, para `write` e
@@ -141,4 +141,4 @@ roda**. Antes de executar, a CLI confere o sistema (`UNSUPPORTED_OS`), os progra
 ## Sem decoração
 
 Cores, emoji e espaçamento decorativo somem automaticamente quando stdout não é terminal, com `--json`,
-`--plain` ou `NO_COLOR`. No modo simples, `list-vox` imprime pastas com `/` no fim (`api/`) e arquivos sem sufixo.
+`--plain` ou `NO_COLOR`. No modo simples, `list-files` imprime pastas com `/` no fim (`api/`) e arquivos sem sufixo.
