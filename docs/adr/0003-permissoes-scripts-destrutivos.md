@@ -1,6 +1,6 @@
 # ADR 0003 — Permissões para scripts que apagam e instalam
 
-- **Status:** aceito (decisão; implementação pendente)
+- **Status:** aceito e implementado (#82)
 - **Data:** 2026-10-21
 - **Issue:** #73
 - **Relacionados:** [ADR 0002](0002-scripts-empacotados.md), [modelo de ameaças](../security/runner.md)
@@ -34,6 +34,7 @@ diz só que o script "pode apagar dados", e um agente de IA passa por ela com `-
 ## Consequências
 
 - Fecha a pendência "destructive exigir confirmação humana mesmo com `--yes`" do `runner.md` (para o caso sem terminal).
-- Exige mudar `manifest.ts` (campo `effects`), `ScriptCommand.ts` (`--confirm`, validação do alvo), `audit.ts` e
-  os testes. **Nada disso está implementado**; o primeiro script `destructive` só entra depois.
+- Implementado em `manifest.ts` (campo `effects`), `ScriptCommand.ts` (`--confirm`), `target.ts` (validação do
+  alvo), `audit.ts` e `parseArgv.ts`, com testes. `--dry-run` listar os efeitos e o uso de lockfile (`npm ci`) são
+  conferidos na **revisão do PR**, não pelo runner.
 - A segurança contra um agente induzido continua dependendo também da aprovação de comandos do cliente do agente.
