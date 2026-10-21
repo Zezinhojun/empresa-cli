@@ -92,7 +92,9 @@ describe('catálogo --json: formato estável', () => {
     };
 
     for (const command of data.commands) {
-      expect(Object.keys(command).sort()).toEqual(
+      // `category` é opcional: só aparece em scripts que a declaram no manifesto.
+      const fields = Object.keys(command).filter((key) => key !== 'category');
+      expect(fields.sort()).toEqual(
         ['args', 'description', 'interactive', 'kind', 'name', 'requires', 'risk', 'usage'].sort(),
       );
       expect(['read', 'write', 'destructive']).toContain(command.risk);
