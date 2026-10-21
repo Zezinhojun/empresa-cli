@@ -78,7 +78,7 @@ um script. Decisão de origem dos scripts: [ADR 0002](../adr/0002-scripts-empaco
    pego na **revisão**.
 4. **`--yes` é uma convenção, não uma barreira.** Um agente induzido por prompt injection pode passar `--yes`.
    O guia do agente instrui a só usá-lo quando o usuário pediu, mas a imposição real é do **cliente do agente**
-   (aprovação de comandos). Para scripts `destructive`, prefira exigir confirmação humana no cliente. O [ADR 0003](../adr/0003-permissoes-scripts-destrutivos.md) planeja `--confirm=<pasta alvo>` para fechar isso (ainda não implementado).
+   (aprovação de comandos). Para scripts `destructive`, prefira exigir confirmação humana no cliente. O [ADR 0003](../adr/0003-permissoes-scripts-destrutivos.md) exige `--confirm=<pasta alvo>` além de `--yes` em `destructive` sem terminal.
 5. **A máscara do log é heurística.** Segredos com formato incomum passam. Cobertos: opções e variáveis com
    nome sensível (`--token`, `*_SECRET`), cabeçalhos (`Authorization`, `Cookie`, `X-*-Key`), `Bearer`/`Basic`,
    senha em URL, segredo em query string e prefixos conhecidos (GitHub, GitLab, npm, Stripe, Slack, AWS, Google,
@@ -113,4 +113,4 @@ um script. Decisão de origem dos scripts: [ADR 0002](../adr/0002-scripts-empaco
 - [x] **Aprovação humana desta revisão de segurança:** dada pelo dono do repositório em 2026-10-14.
 - [x] _Private vulnerability reporting_ habilitado no GitHub (ver [SECURITY.md](../../SECURITY.md)).
 - [x] Decidido em [ADR 0003](../adr/0003-permissoes-scripts-destrutivos.md): `destructive` sem terminal exigirá `--confirm=<pasta alvo>` além de `--yes`.
-- [ ] Implementar o ADR 0003 (`effects`, validação do alvo, `--confirm`, auditoria). **Hoje `--yes` ainda basta.**
+- [x] ADR 0003 implementado (#82): `effects`, validação do alvo, `--confirm` e auditoria.

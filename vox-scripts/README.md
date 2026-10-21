@@ -35,17 +35,18 @@ vox-scripts/
 }
 ```
 
-| Campo         | Obrigatório | O que é                                                                                                                                    |
-| ------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `name`        | sim         | Nome do comando: minúsculas e hífens (`setup-wordpress`), até 40 caracteres. **Igual ao da pasta.** Não pode repetir um comando existente. |
-| `description` | sim         | O que faz, **em linguagem simples** (aparece no menu e em `vox list`). Até 200 caracteres.                                                 |
-| `entry`       | sim         | Arquivo a executar, relativo à pasta. `.js`/`.mjs`/`.cjs`, `.sh` ou `.py`. O runtime sai da extensão.                                      |
-| `risk`        | sim         | `read` (só lê), `write` (altera coisas) ou `destructive` (pode apagar). Veja abaixo.                                                       |
-| `args`        | não         | Argumentos posicionais (`name`, `description`, `required`). Obrigatórios vêm antes dos opcionais.                                          |
-| `os`          | não         | Sistemas onde funciona: `darwin`, `linux`, `win32`. Padrão: todos.                                                                         |
-| `requires`    | não         | Programas que precisam estar instalados (ex.: `docker`, `git`). A CLI confere antes de executar.                                           |
-| `timeoutSec`  | não         | Tempo máximo, de 1 a 3600 (padrão 300). Passou disso, o script é interrompido.                                                             |
-| `category`    | não         | Agrupa no menu interativo.                                                                                                                 |
+| Campo         | Obrigatório | O que é                                                                                                                                                                                                |
+| ------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `name`        | sim         | Nome do comando: minúsculas e hífens (`setup-wordpress`), até 40 caracteres. **Igual ao da pasta.** Não pode repetir um comando existente.                                                             |
+| `description` | sim         | O que faz, **em linguagem simples** (aparece no menu e em `vox list`). Até 200 caracteres.                                                                                                             |
+| `entry`       | sim         | Arquivo a executar, relativo à pasta. `.js`/`.mjs`/`.cjs`, `.sh` ou `.py`. O runtime sai da extensão.                                                                                                  |
+| `risk`        | sim         | `read` (só lê), `write` (altera coisas) ou `destructive` (pode apagar). Veja abaixo.                                                                                                                   |
+| `args`        | não         | Argumentos posicionais (`name`, `description`, `required`). Obrigatórios vêm antes dos opcionais.                                                                                                      |
+| `os`          | não         | Sistemas onde funciona: `darwin`, `linux`, `win32`. Padrão: todos.                                                                                                                                     |
+| `requires`    | não         | Programas que precisam estar instalados (ex.: `docker`, `git`). A CLI confere antes de executar.                                                                                                       |
+| `timeoutSec`  | não         | Tempo máximo, de 1 a 3600 (padrão 300). Passou disso, o script é interrompido.                                                                                                                         |
+| `effects`     | não         | O que o script apaga, instala ou acessa: `delete:node_modules`, `delete:vendor`, `delete:var`, `install:npm`, `install:composer`, `network`. Só informa; a revisão do PR confere se bate com o código. |
+| `category`    | não         | Agrupa no menu interativo.                                                                                                                                                                             |
 
 Campos que não existem nesta tabela são **rejeitados** (assim um erro de digitação como `riks` não passa batido).
 
@@ -66,18 +67,19 @@ No Windows não há Bash nem Python por padrão. Se faltar, a CLI **não executa
 
 ### Risco e confirmação
 
-| `risk`        | Pessoa no terminal              | Agente de IA / sem terminal               |
-| ------------- | ------------------------------- | ----------------------------------------- |
-| `read`        | executa                         | executa                                   |
-| `write`       | pergunta antes (ou `--yes`)     | exige `--yes`, senão falha com código `4` |
-| `destructive` | pergunta com aviso (ou `--yes`) | exige `--yes`, senão falha com código `4` |
+| `risk`        | Pessoa no terminal              | Agente de IA / sem terminal                                    |
+| ------------- | ------------------------------- | -------------------------------------------------------------- |
+| `read`        | executa                         | executa                                                        |
+| `write`       | pergunta antes (ou `--yes`)     | exige `--yes`, senão falha com código `4`                      |
+| `destructive` | pergunta com aviso (ou `--yes`) | exige `--yes` **e** `--confirm=<pasta alvo>`, senão código `4` |
 
 Na dúvida, escolha o risco **mais alto**. O menu mostra `[altera coisas]` / `[pode apagar dados]` ao lado do comando.
 
-> **Planejado ([ADR 0003](../docs/adr/0003-permissoes-scripts-destrutivos.md), ainda não implementado):** o
-> manifesto ganhará `effects` (`delete:node_modules`, `install:npm`, `network`…), só informativo e conferido na
-> revisão do PR; a confirmação mostrará o diretório alvo; e script `destructive` sem terminal exigirá
-> `--confirm=<nome da pasta alvo>` além de `--yes`. Até lá, `effects` é rejeitado como campo desconhecido.
+Script `destructive` (ou que declara `effects` de apagar/instalar) só roda dentro de um **projeto** (a pasta atual
+precisa ter `package.json` ou `composer.json`; `~`, a raiz do disco e pastas do sistema são recusados, e
+`node_modules`/`vendor`/`var` não podem ser links simbólicos). Para `destructive` **sem terminal**, `--yes` não basta: passe também
+`--confirm=<nome da pasta alvo>`, ou o comando falha com código `4`
+([ADR 0003](../docs/adr/0003-permissoes-scripts-destrutivos.md)).
 
 ## O que o script recebe
 
